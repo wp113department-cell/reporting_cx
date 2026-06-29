@@ -656,13 +656,60 @@ let taskSeq = 0;
 let meetSeq = 0;
 let meetVisible = false;
 
+// ─── DRAFT (localStorage) ───────────────────────────────
+const DRAFT_KEY = 'dailyUpdateDraft';
+
+function saveDraft() {
+  const tasks = [];
+  document.querySelectorAll('.task-card').forEach(card => {
+    const n = card.id.replace('task-', '');
+    tasks.push({
+      ticket: document.getElementById('tk-'+n)?.value || '',
+      status: document.getElementById('st-'+n)?.value || 'In Progress',
+      hours:  document.getElementById('hr-'+n)?.value || '',
+      desc:   document.getElementById('ds-'+n)?.value || '',
+      links:  document.getElementById('lk-'+n)?.value || '',
+      notes:  document.getElementById('nt-'+n)?.value || ''
+    });
+  });
+  localStorage.setItem(DRAFT_KEY, JSON.stringify(tasks));
+}
+
+function loadDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return false;
+    const tasks = JSON.parse(raw);
+    if (!tasks || !tasks.length) return false;
+    tasks.forEach(t => {
+      taskSeq++;
+      const n = taskSeq;
+      const wrap = document.getElementById('tasksContainer');
+      const div = document.createElement('div');
+      div.className = 'task-card';
+      div.id = 'task-' + n;
+      div.innerHTML = _taskHTML(n);
+      wrap.appendChild(div);
+      document.getElementById('tk-'+n).value = t.ticket || '';
+      document.getElementById('st-'+n).value = t.status || 'In Progress';
+      document.getElementById('hr-'+n).value = t.hours  || '';
+      document.getElementById('ds-'+n).value = t.desc   || '';
+      document.getElementById('lk-'+n).value = t.links  || '';
+      document.getElementById('nt-'+n).value = t.notes  || '';
+    });
+    return true;
+  } catch(e) { return false; }
+}
+
 // ─── INIT ───────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
   await loadDate();
   await loadTickets();
   await loadUserSettings();
   checkDriveStatus();
-  addTask();
+  if (!loadDraft()) addTask();
+  document.getElementById('tasksContainer').addEventListener('input', saveDraft);
+  document.getElementById('tasksContainer').addEventListener('change', saveDraft);
 });
 
 async function loadDate() {
@@ -735,14 +782,8 @@ function switchTab(tab, btn) {
 }
 
 // ─── TASK MANAGEMENT ────────────────────────────────────
-function addTask() {
-  taskSeq++;
-  const n = taskSeq;
-  const wrap = document.getElementById('tasksContainer');
-  const div = document.createElement('div');
-  div.className = 'task-card';
-  div.id = 'task-' + n;
-  div.innerHTML = `
+function _taskHTML(n) {
+  return `
     <div class="task-top">
       <span class="task-badge">Task ${n}</span>
       ${n > 1 ? `<button class="btn-danger-ghost" onclick="removeTask(${n})">✕ Remove</button>` : ''}
@@ -750,7 +791,6 @@ function addTask() {
     <div class="form-row">
       <div class="form-group ac-wrapper">
         <label>Task / Ticket Name *</label>
-        ${pinnedProjects.length ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;">${pinnedProjects.map(p=>`<span onclick="pickAC(${n},'${p.replace(/'/g,"\\'")}',true)" style="cursor:pointer;background:#ede9fe;color:#7c3aed;padding:3px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;">📌 ${p}</span>`).join('')}</div>` : ''}
         <input type="text" id="tk-${n}" placeholder="e.g. JRR2206, AKV2008"
                autocomplete="off"
                oninput="showAC(${n}, this.value)"
@@ -791,13 +831,25 @@ function addTask() {
         <input type="text" id="nt-${n}" placeholder="Any special note for manager">
       </div>
     </div>`;
+}
+
+function addTask() {
+  taskSeq++;
+  const n = taskSeq;
+  const wrap = document.getElementById('tasksContainer');
+  const div = document.createElement('div');
+  div.className = 'task-card';
+  div.id = 'task-' + n;
+  div.innerHTML = _taskHTML(n);
   wrap.appendChild(div);
   div.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  saveDraft();
 }
 
 function removeTask(n) {
   const el = document.getElementById('task-' + n);
   if (el) el.remove();
+  saveDraft();
 }
 
 // ─── BULLET TYPING ───────────────────────────────────────

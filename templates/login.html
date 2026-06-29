@@ -215,7 +215,6 @@ async function sendOtp() {
       document.getElementById('step1').classList.remove('active');
       document.getElementById('step2').classList.add('active');
       document.getElementById('otpInput').focus();
-      showSucc(data.message);
     } else {
       showErr(data.error || 'Failed to send OTP');
     }

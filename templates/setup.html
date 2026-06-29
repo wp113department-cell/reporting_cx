@@ -161,6 +161,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
   <h1>🤖 Daily Update Generator — Settings</h1>
   <div class="header-right">
     <span>{{ user_email }}</span>
+    <a href="/" style="color:white;font-size:0.82rem;text-decoration:none;padding:5px 12px;border-radius:6px;background:rgba(255,255,255,0.15);font-weight:600;">← Back to App</a>
     <button class="logout-btn" onclick="window.location='/logout'">Logout</button>
   </div>
 </header>
@@ -345,9 +346,6 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
       <button class="btn btn-primary" onclick="saveSettings()" id="saveBtn" style="padding:13px 32px;font-size:0.95rem;">
         💾 Save All Settings
       </button>
-      {% if settings.get('setup_done') %}
-      <a href="/" class="btn btn-outline">← Back to App</a>
-      {% endif %}
     </div>
   </div>
 
