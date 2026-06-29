@@ -230,12 +230,6 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
         <input type="text" id="cc_emails" value="{{ settings.get('cc_emails','') }}" placeholder="cc1@example.com, cc2@example.com">
       </div>
     </div>
-    <div class="form-row">
-      <div class="form-group" style="flex:1;">
-        <label>Saved Project / Ticket Names <span style="font-weight:400;text-transform:none;">(one per line — shows as quick-pick on Daily Update form)</span></label>
-        <textarea id="project_names" rows="4" placeholder="JRR2206&#10;AKV2008&#10;Voice Agent&#10;GHL Integration" style="resize:vertical;">{{ settings.get('project_names','') }}</textarea>
-      </div>
-    </div>
   </div>
 
   <!-- SECTION 4: GOOGLE DRIVE -->
@@ -404,31 +398,48 @@ async function testGmail() {
   finally { btn.disabled = false; btn.textContent = '🧪 Test Gmail Connection'; }
 }
 
-async function saveSettings() {
-  const btn = document.getElementById('saveBtn');
-  btn.disabled = true;
-  btn.textContent = 'Saving...';
-
+function _buildPayload() {
   const pass = document.getElementById('gmail_app_password').value.trim();
   const payload = {
-    groq_api_key:       document.getElementById('groq_api_key').value.trim(),
-    groq_model:         'llama-3.3-70b-versatile',
-    project_names:      document.getElementById('project_names').value.trim(),
-    gmail_user:         document.getElementById('gmail_user').value.trim(),
-    reporting_manager:  document.getElementById('reporting_manager').value.trim(),
-    department:         document.getElementById('department').value.trim(),
-    to_email:           document.getElementById('to_email').value.trim(),
-    cc_emails:          document.getElementById('cc_emails').value.trim(),
+    groq_api_key:      document.getElementById('groq_api_key').value.trim(),
+    groq_model:        'llama-3.3-70b-versatile',
+    gmail_user:        document.getElementById('gmail_user').value.trim(),
+    reporting_manager: document.getElementById('reporting_manager').value.trim(),
+    department:        document.getElementById('department').value.trim(),
+    to_email:          document.getElementById('to_email').value.trim(),
+    cc_emails:         document.getElementById('cc_emails').value.trim(),
   };
   if (pass) payload.gmail_app_password = pass;
+  return payload;
+}
 
+function _validatePayload(payload) {
+  if (!payload.groq_api_key)      return 'Groq API Key is required';
+  if (!payload.gmail_user)        return 'Gmail address is required';
+  if (!payload.reporting_manager) return 'Reporting Manager name is required';
+  if (!payload.department)        return 'Department is required';
+  if (!payload.to_email)          return 'TO email is required';
+  return null;
+}
+
+async function _doSave(payload) {
+  const res  = await fetch('/api/settings/save', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  return await res.json();
+}
+
+async function saveSettings() {
+  const payload = _buildPayload();
+  const err = _validatePayload(payload);
+  if (err) { showToast('error', '⚠️ ' + err); return; }
+
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true; btn.textContent = 'Saving...';
   try {
-    const res  = await fetch('/api/settings/save', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    const data = await res.json();
+    const data = await _doSave(payload);
     if (data.success) {
       showToast('success', '✅ Settings saved!');
       setTimeout(() => window.location.href = '/', 1200);
@@ -438,31 +449,33 @@ async function saveSettings() {
   } catch(e) {
     showToast('error', e.message);
   } finally {
-    btn.disabled = false;
-    btn.textContent = '💾 Save All Settings';
+    btn.disabled = false; btn.textContent = '💾 Save All Settings';
   }
 }
 
 async function connectDrive() {
+  // Auto-save settings before redirecting so nothing is lost
+  const payload = _buildPayload();
+  const err = _validatePayload(payload);
+  if (err) { showToast('error', '⚠️ Fill required fields before connecting Drive: ' + err); return; }
+
   const btn = document.getElementById('driveBtn');
-  btn.disabled = true;
-  btn.textContent = 'Opening Google...';
+  btn.disabled = true; btn.textContent = 'Saving & Connecting...';
   document.getElementById('driveErrBox').style.display = 'none';
   try {
+    await _doSave(payload);
     const res  = await fetch('/api/drive/start-auth', { method: 'POST' });
     const data = await res.json();
     if (data.success) {
-      showToast('success', 'Redirecting to Google login...');
+      showToast('success', 'Settings saved! Redirecting to Google...');
       window.location.href = data.auth_url;
     } else {
       showToast('error', data.error || 'Could not start Drive auth');
-      btn.disabled = false;
-      btn.textContent = '☁️ Connect Google Drive';
+      btn.disabled = false; btn.textContent = '☁️ Connect Google Drive';
     }
   } catch(e) {
     showToast('error', e.message);
-    btn.disabled = false;
-    btn.textContent = '☁️ Connect Google Drive';
+    btn.disabled = false; btn.textContent = '☁️ Connect Google Drive';
   }
 }
 
