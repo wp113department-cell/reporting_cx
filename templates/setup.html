@@ -196,8 +196,13 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
         <input type="text" id="gmail_user" value="{{ settings.get('gmail_user','') }}" placeholder="you@gmail.com">
       </div>
       <div class="form-group">
-        <label>Gmail App Password</label>
-        <input type="password" id="gmail_app_password" placeholder="16-char app password (leave blank to keep current)">
+        <label>Gmail App Password
+          {% if has_gmail_pass %}<span style="background:#dcfce7;color:#166534;font-size:0.72rem;padding:2px 8px;border-radius:10px;margin-left:8px;font-weight:600;">✅ Saved</span>{% endif %}
+        </label>
+        <div style="position:relative;">
+          <input type="password" id="gmail_app_password" placeholder="{% if has_gmail_pass %}Leave blank to keep saved password{% else %}16-char app password{% endif %}" style="padding-right:40px;">
+          <span onclick="togglePass()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:1.1rem;" title="Show/Hide">👁️</span>
+        </div>
         <span class="hint">See guide below → How to create Gmail App Password</span>
       </div>
     </div>
@@ -361,6 +366,11 @@ function setTestStatus(elId, ok, msg) {
   el.className = 'test-status ' + (ok ? 'ok' : 'err');
   el.textContent = (ok ? '✅ ' : '❌ ') + msg;
   el.style.display = 'inline';
+}
+
+function togglePass() {
+  const f = document.getElementById('gmail_app_password');
+  f.type = f.type === 'password' ? 'text' : 'password';
 }
 
 async function testGroq() {

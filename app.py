@@ -665,7 +665,8 @@ def login_page():
 def setup_page():
     s = get_user_settings(get_current_user())
     return render_template('setup.html', settings=s, user_email=get_current_user(),
-                           drive_connected=bool(s.get('drive_token_json')))
+                           drive_connected=bool(s.get('drive_token_json')),
+                           has_gmail_pass=bool(s.get('gmail_app_password')))
 
 @app.route('/logout')
 def logout():
