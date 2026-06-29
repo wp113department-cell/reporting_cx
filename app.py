@@ -562,6 +562,7 @@ Task {i}:
     else:
         meetings_text = "No meetings today."
 
+    num_tasks = len(tasks)
     prompt = f"""You are a professional AIML developer assistant. Format the daily work update into JSON.
 
 Date: {work_date}
@@ -576,21 +577,36 @@ Tasks:
 Meetings:
 {meetings_text}
 
+CRITICAL: There are {num_tasks} task(s) above. You MUST return EXACTLY {num_tasks} entries in task_summaries — one for each task. Do NOT skip or merge any task.
+
 Return JSON with EXACTLY these fields (no markdown, no extra text):
 
 {{
-  "teams_message": "Complete Teams plain-text message",
+  "teams_message": "Complete Teams plain-text message covering ALL {num_tasks} tasks",
   "email_subject": "ATTENDANCE: {work_date}",
   "task_summaries": [
     {{
-      "ticket": "NAME",
+      "ticket": "TASK 1 NAME",
       "description_points": ["point 1","point 2","point 3","point 4"],
       "hours": "X Hours",
-      "status": "Status",
+      "status": "Status of task 1",
       "links": [],
       "commits": ["commit 1","commit 2","commit 3","commit 4","commit 5"],
       "modules": ["module 1","module 2","module 3"],
       "qa_testing": ["test 1","test 2","test 3"],
+      "documentation": ["NA"],
+      "blockers": ["None"],
+      "tomorrow": ["Continue with the further tasks."]
+    }},
+    {{
+      "ticket": "TASK 2 NAME (repeat this object for every additional task)",
+      "description_points": ["point 1","point 2","point 3","point 4"],
+      "hours": "X Hours",
+      "status": "Status of task 2",
+      "links": [],
+      "commits": ["commit 1","commit 2","commit 3"],
+      "modules": ["module 1","module 2"],
+      "qa_testing": ["test 1","test 2"],
       "documentation": ["NA"],
       "blockers": ["None"],
       "tomorrow": ["Continue with the further tasks."]
@@ -599,35 +615,39 @@ Return JSON with EXACTLY these fields (no markdown, no extra text):
   "meetings": [{{"name":"NA","duration":"NA","purpose":"NA"}}]
 }}
 
-TEAMS MESSAGE FORMAT:
+TEAMS MESSAGE FORMAT (include ALL tasks, one section per task):
 Work Update
 
 Date: {work_date}
 
-Project/Client Name - [TICKET]
+Project/Client Name - [TICKET 1]
 
     - [expanded point 1]
     - [expanded point 2]
     - [expanded point 3]
     - [expanded point 4]
 
-[Link: section ONLY if links provided]
-Actual Hours:
-    - [hours] Hours
+Actual Hours: [hours] Hours
 
-[Note: section ONLY if notes provided]
-Tomorrow's Task:
-    - As per the client's feedback.
+Project/Client Name - [TICKET 2]
+
+    - [expanded point 1]
+    - [expanded point 2]
+
+Actual Hours: [hours] Hours
+
+(repeat for every task)
 
 RULES:
-- Expand user's brief description to 4-6 professional bullet points
-- commits: 4-6 past-tense technical actions
-- modules: 3-5 specific features worked on
-- qa_testing: 3-4 specific tests done
+- task_summaries MUST have {num_tasks} items — one per task, no exceptions
+- Expand each task's brief description to 4-6 professional bullet points
+- commits: 4-6 past-tense technical actions per task
+- modules: 3-5 specific features worked on per task
+- qa_testing: 3-4 specific tests done per task
 - documentation: ["NA"] unless mentioned
 - blockers: ["None"] unless mentioned
 - No meetings → [{{"name":"NA","duration":"NA","purpose":"NA"}}]
-- Return ONLY valid JSON."""
+- Return ONLY valid JSON, no markdown fences"""
 
     client = get_user_groq_client(user_email)
     resp = client.chat.completions.create(

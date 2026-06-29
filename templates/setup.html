@@ -199,9 +199,9 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
         <label>Gmail App Password
           {% if has_gmail_pass %}<span style="background:#dcfce7;color:#166534;font-size:0.72rem;padding:2px 8px;border-radius:10px;margin-left:8px;font-weight:600;">✅ Saved</span>{% endif %}
         </label>
-        <div style="position:relative;">
-          <input type="password" id="gmail_app_password" placeholder="{% if has_gmail_pass %}Leave blank to keep saved password{% else %}16-char app password{% endif %}" style="padding-right:40px;">
-          <span onclick="togglePass()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:1.1rem;" title="Show/Hide">👁️</span>
+        <div style="position:relative;display:flex;align-items:center;">
+          <input type="password" id="gmail_app_password" placeholder="{% if has_gmail_pass %}Leave blank to keep saved password{% else %}16-char app password{% endif %}" style="flex:1;padding-right:44px;">
+          <button type="button" onclick="togglePass()" tabindex="-1" style="position:absolute;right:4px;background:none;border:none;cursor:pointer;font-size:1.15rem;padding:4px 8px;color:#64748b;" title="Show / Hide password">👁</button>
         </div>
         <span class="hint">See guide below → How to create Gmail App Password</span>
       </div>
