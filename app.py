@@ -60,10 +60,10 @@ def _get_creds_path():
     return None
 
 def _get_redirect_uri():
-    """Dynamic redirect URI — HTTPS on Vercel, HTTP localhost for local dev."""
-    if os.getenv('VERCEL'):
-        return f"https://{request.host}/oauth2callback"
-    return 'http://localhost:5000/oauth2callback'
+    host = request.host
+    if 'localhost' in host or '127.0.0.1' in host:
+        return f'http://{host}/oauth2callback'
+    return f'https://{host}/oauth2callback'
 
 # ─── OTP STORE ───────────────────────────────────────────────────────────────
 otp_store = {}  # {email: {'otp': '123456', 'expiry': datetime}}
@@ -887,6 +887,9 @@ def api_validate_gmail():
     gmail_pass = data.get('gmail_app_password', '').strip()
     if not gmail_user or not gmail_pass:
         return jsonify({'valid': False, 'error': 'Email and App Password are required'})
+    # On cloud servers SMTP is blocked — credentials are saved and Brevo handles delivery
+    if os.getenv('BREVO_API_KEY'):
+        return jsonify({'valid': True, 'message': 'Credentials saved! Emails are sent via Brevo (SMTP blocked on cloud).'})
     try:
         with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=10) as server:
             server.login(gmail_user, gmail_pass)
