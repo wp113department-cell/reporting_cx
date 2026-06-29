@@ -1100,4 +1100,5 @@ if __name__ == '__main__':
     print("  http://localhost:5000")
     print("="*50 + "\n")
     debug = os.getenv('FLASK_DEBUG', 'false').lower() == 'true'
-    app.run(debug=debug, host='0.0.0.0', port=5000)
+    port = int(os.getenv('PORT', 5000))
+    app.run(debug=debug, host='0.0.0.0', port=port)
