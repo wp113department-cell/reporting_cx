@@ -13,7 +13,7 @@ from flask import Flask, render_template, request, jsonify, redirect, session, a
 from groq import Groq
 import google.generativeai as genai
 from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
+from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
@@ -896,7 +896,7 @@ def api_drive_start_auth():
         return jsonify({'success': False, 'error': 'credentials.json not found. Set GOOGLE_CREDENTIALS_JSON env var.'}), 400
     try:
         redirect_uri = _get_redirect_uri()
-        flow = InstalledAppFlow.from_client_secrets_file(creds_path, DRIVE_SCOPES,
+        flow = Flow.from_client_secrets_file(creds_path, DRIVE_SCOPES,
                                                           redirect_uri=redirect_uri)
         auth_url, state = flow.authorization_url(access_type='offline', prompt='consent')
         session['oauth_mode']        = 'drive'
@@ -916,7 +916,7 @@ def oauth2callback():
         return redirect('/setup?error=no_credentials')
     try:
         redirect_uri = _get_redirect_uri()
-        flow = InstalledAppFlow.from_client_secrets_file(
+        flow = Flow.from_client_secrets_file(
             creds_path, DRIVE_SCOPES, redirect_uri=redirect_uri)
         flow.fetch_token(authorization_response=request.url)
         creds = flow.credentials
