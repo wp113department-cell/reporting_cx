@@ -665,11 +665,7 @@ function saveDraft() {
     const n = card.id.replace('task-', '');
     tasks.push({
       ticket: document.getElementById('tk-'+n)?.value || '',
-      status: document.getElementById('st-'+n)?.value || 'In Progress',
-      hours:  document.getElementById('hr-'+n)?.value || '',
-      desc:   document.getElementById('ds-'+n)?.value || '',
-      links:  document.getElementById('lk-'+n)?.value || '',
-      notes:  document.getElementById('nt-'+n)?.value || ''
+      status: document.getElementById('st-'+n)?.value || 'In Progress'
     });
   });
   localStorage.setItem(DRAFT_KEY, JSON.stringify(tasks));
@@ -690,12 +686,9 @@ function loadDraft() {
       div.id = 'task-' + n;
       div.innerHTML = _taskHTML(n);
       wrap.appendChild(div);
+      // Only restore ticket name and status — daily fields stay blank
       document.getElementById('tk-'+n).value = t.ticket || '';
       document.getElementById('st-'+n).value = t.status || 'In Progress';
-      document.getElementById('hr-'+n).value = t.hours  || '';
-      document.getElementById('ds-'+n).value = t.desc   || '';
-      document.getElementById('lk-'+n).value = t.links  || '';
-      document.getElementById('nt-'+n).value = t.notes  || '';
     });
     return true;
   } catch(e) { return false; }
@@ -708,8 +701,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadUserSettings();
   checkDriveStatus();
   if (!loadDraft()) addTask();
-  document.getElementById('tasksContainer').addEventListener('input', saveDraft);
-  document.getElementById('tasksContainer').addEventListener('change', saveDraft);
+  // Only save draft when ticket name or status changes
+  document.getElementById('tasksContainer').addEventListener('input', e => {
+    if (e.target.id && e.target.id.startsWith('tk-')) saveDraft();
+  });
+  document.getElementById('tasksContainer').addEventListener('change', e => {
+    if (e.target.id && e.target.id.startsWith('st-')) saveDraft();
+  });
 });
 
 async function loadDate() {
