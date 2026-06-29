@@ -651,6 +651,7 @@ let currentTeams = '';
 let currentEmailHtml = '';
 let currentEmailSubject = '';
 let savedTickets = [];
+let pinnedProjects = [];
 let taskSeq = 0;
 let meetSeq = 0;
 let meetVisible = false;
@@ -719,7 +720,8 @@ async function loadTickets() {
   try {
     const r = await fetch('/api/tickets');
     const d = await r.json();
-    savedTickets = d.tickets || [];
+    savedTickets   = d.tickets || [];
+    pinnedProjects = d.pinned  || [];
   } catch(e) {}
 }
 
@@ -748,6 +750,7 @@ function addTask() {
     <div class="form-row">
       <div class="form-group ac-wrapper">
         <label>Task / Ticket Name *</label>
+        ${pinnedProjects.length ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;">${pinnedProjects.map(p=>`<span onclick="pickAC(${n},'${p.replace(/'/g,"\\'")}',true)" style="cursor:pointer;background:#ede9fe;color:#7c3aed;padding:3px 10px;border-radius:20px;font-size:0.78rem;font-weight:600;">📌 ${p}</span>`).join('')}</div>` : ''}
         <input type="text" id="tk-${n}" placeholder="e.g. JRR2206, AKV2008"
                autocomplete="off"
                oninput="showAC(${n}, this.value)"
@@ -848,11 +851,16 @@ function showAC(n, val) {
   list.style.display = 'block';
 }
 function hideAC(n) { setTimeout(() => { const l = document.getElementById('ac-'+n); if(l) l.style.display='none'; }, 200); }
-function pickAC(n, val) {
+function pickAC(n, val, fromPin) {
   const inp = document.getElementById('tk-'+n);
   if(inp) inp.value = val;
   const l = document.getElementById('ac-'+n);
   if(l) l.style.display = 'none';
+  if(fromPin) {
+    const st = document.getElementById('st-'+n);
+    if(st) st.value = 'In Progress';
+    document.getElementById('ds-'+n)?.focus();
+  }
 }
 
 // ─── MEETINGS ────────────────────────────────────────────

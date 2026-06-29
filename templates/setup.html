@@ -230,6 +230,12 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
         <input type="text" id="cc_emails" value="{{ settings.get('cc_emails','') }}" placeholder="cc1@example.com, cc2@example.com">
       </div>
     </div>
+    <div class="form-row">
+      <div class="form-group" style="flex:1;">
+        <label>Saved Project / Ticket Names <span style="font-weight:400;text-transform:none;">(one per line — shows as quick-pick on Daily Update form)</span></label>
+        <textarea id="project_names" rows="4" placeholder="JRR2206&#10;AKV2008&#10;Voice Agent&#10;GHL Integration" style="resize:vertical;">{{ settings.get('project_names','') }}</textarea>
+      </div>
+    </div>
   </div>
 
   <!-- SECTION 4: GOOGLE DRIVE -->
@@ -407,6 +413,7 @@ async function saveSettings() {
   const payload = {
     groq_api_key:       document.getElementById('groq_api_key').value.trim(),
     groq_model:         'llama-3.3-70b-versatile',
+    project_names:      document.getElementById('project_names').value.trim(),
     gmail_user:         document.getElementById('gmail_user').value.trim(),
     reporting_manager:  document.getElementById('reporting_manager').value.trim(),
     department:         document.getElementById('department').value.trim(),

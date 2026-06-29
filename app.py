@@ -917,8 +917,11 @@ def api_date():
 def api_tickets():
     email = get_current_user()
     T = Query()
-    names = sorted(set(t['name'] for t in tickets_table.search(T.user == email)))
-    return jsonify({'tickets': names})
+    history_names = set(t['name'] for t in tickets_table.search(T.user == email))
+    s = get_user_settings(email)
+    saved = [p.strip() for p in s.get('project_names', '').splitlines() if p.strip()]
+    all_names = sorted(set(list(history_names) + saved))
+    return jsonify({'tickets': all_names, 'pinned': saved})
 
 @app.route('/api/generate', methods=['POST'])
 @login_required_api
