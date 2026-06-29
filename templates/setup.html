@@ -297,18 +297,13 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
         <span class="arr" id="fix403-guide-arr">▼</span>
       </div>
       <div class="guide-body" id="fix403-guide">
-        <div class="warn">⚠️ You get this error when your Google email is not added as a test user in the Google Cloud Console project that owns the credentials.json.</div>
+        <div class="warn">⚠️ This error means the Google OAuth app is still in "Testing" mode. The admin needs to publish it once — takes 1 minute.</div>
+        <div class="note">ℹ️ This is a one-time fix done by the app admin only. After publishing, all users can connect Google Drive without any restrictions.</div>
         <ol>
-          <li>Open <code>console.cloud.google.com</code> and sign in with the Google account that owns the app (the account that created the project <strong>dailyupdates-500612</strong>).</li>
-          <li>In the top bar, make sure the project <strong>dailyupdates-500612</strong> is selected.</li>
-          <li>In the left menu go to <strong>APIs &amp; Services</strong> → <strong>OAuth consent screen</strong>.</li>
-          <li>Scroll down to the <strong>Test users</strong> section.</li>
-          <li>Click <strong>+ Add users</strong>.</li>
-          <li>Enter the work email you want to connect (e.g. <code>wp113.department@gmail.com</code>). Add all emails that will use this app.</li>
-          <li>Click <strong>Save</strong>.</li>
-          <li>Come back here and click <strong>Connect Google Drive</strong> again.</li>
+          <li>Ask your admin (<strong>wp113.department@gmail.com</strong>) to publish the app.</li>
+          <li>Admin steps: Go to <code>console.cloud.google.com</code> → select project <strong>dailyupdates-500612</strong> → <strong>APIs &amp; Services</strong> → <strong>OAuth consent screen</strong> → click <strong>"Publish App"</strong> → click <strong>Confirm</strong>.</li>
+          <li>Once published, come back here and click <strong>Connect Google Drive</strong> again.</li>
         </ol>
-        <div class="note">ℹ️ Only users added here can connect during testing. You can add up to 100 test users. If you need more, you can publish the app (requires Google verification).</div>
       </div>
     </div>
 
@@ -321,15 +316,6 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
       <div class="guide-body" id="drive-guide">
         <div class="note">ℹ️ This only needs to be done once. After connecting, the app saves your daily .txt and .docx files automatically to your work Google Drive.</div>
         <ol>
-          <li>Make sure your email is added as a test user (see guide above if you got a 403 error).</li>
-          <li>Make sure <code>http://localhost:5000/oauth2callback</code> is listed as an <strong>Authorized Redirect URI</strong> in your OAuth 2.0 Client:
-            <ul style="margin-top:4px;">
-              <li>Google Cloud Console → <strong>APIs &amp; Services</strong> → <strong>Credentials</strong></li>
-              <li>Click your OAuth 2.0 Client ID</li>
-              <li>Under "Authorized redirect URIs" → click <strong>+ Add URI</strong> → type <code>http://localhost:5000/oauth2callback</code></li>
-              <li>Click <strong>Save</strong></li>
-            </ul>
-          </li>
           <li>Click <strong>Connect Google Drive</strong> above.</li>
           <li>A Google login page opens. Select your <strong>work Google account</strong>.</li>
           <li>If you see a warning "Google hasn't verified this app" — click <strong>Advanced</strong> → <strong>Go to dailyupdates (unsafe)</strong>. This is safe for your own private app.</li>
