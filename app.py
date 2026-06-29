@@ -166,17 +166,18 @@ def is_user_approved(email):
     return get_user_status(email) == 'approved'
 
 def _send_raw_email(from_user, from_pass, to_email, subject, html_body):
-    resend_key = os.getenv('RESEND_API_KEY', '')
-    if resend_key:
+    brevo_key = os.getenv('BREVO_API_KEY', '')
+    if brevo_key:
         import urllib.request as _ureq
+        sender_email = from_user or os.getenv('ADMIN_GMAIL_USER', 'noreply@dailyupdate.app')
         payload = json.dumps({
-            'from': 'Daily Update App <onboarding@resend.dev>',
-            'to': [to_email],
-            'subject': subject,
-            'html': html_body
+            'sender':      {'name': 'Daily Update App', 'email': sender_email},
+            'to':          [{'email': to_email}],
+            'subject':     subject,
+            'htmlContent': html_body
         }).encode('utf-8')
-        req = _ureq.Request('https://api.resend.com/emails', data=payload,
-                             headers={'Authorization': f'Bearer {resend_key}',
+        req = _ureq.Request('https://api.brevo.com/v3/smtp/email', data=payload,
+                             headers={'api-key': brevo_key,
                                       'Content-Type': 'application/json'},
                              method='POST')
         _ureq.urlopen(req, timeout=15)
