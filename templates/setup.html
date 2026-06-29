@@ -185,17 +185,6 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); co
       <button class="btn-test" onclick="testGroq()" id="groqTestBtn">🧪 Test Groq Key</button>
       <span class="test-status" id="groqStatus"></span>
     </div>
-    <div class="form-row" style="margin-top:14px;">
-      <div class="form-group">
-        <label>Gemini API Key (Fallback)</label>
-        <input type="text" id="gemini_api_key" value="{{ settings.get('gemini_api_key','') }}" placeholder="AIza... or AQ...">
-        <span class="hint">Get free key at <a href="https://aistudio.google.com" target="_blank">aistudio.google.com</a> — Model: <strong>gemini-3-flash-preview</strong></span>
-      </div>
-    </div>
-    <div class="test-row">
-      <button class="btn-test" onclick="testGemini()" id="geminiTestBtn">🧪 Test Gemini Key</button>
-      <span class="test-status" id="geminiStatus"></span>
-    </div>
   </div>
 
   <!-- SECTION 2: GMAIL -->
@@ -390,21 +379,6 @@ async function testGroq() {
   finally { btn.disabled = false; btn.textContent = '🧪 Test Groq Key'; }
 }
 
-async function testGemini() {
-  const btn = document.getElementById('geminiTestBtn');
-  const key = document.getElementById('gemini_api_key').value.trim();
-  if (!key) { setTestStatus('geminiStatus', false, 'Enter an API key first'); return; }
-  btn.disabled = true; btn.textContent = 'Testing...';
-  try {
-    const res  = await fetch('/api/validate/gemini', {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ api_key: key, model: 'gemini-3-flash-preview' })
-    });
-    const data = await res.json();
-    setTestStatus('geminiStatus', data.valid, data.valid ? data.message : data.error);
-  } catch(e) { setTestStatus('geminiStatus', false, e.message); }
-  finally { btn.disabled = false; btn.textContent = '🧪 Test Gemini Key'; }
-}
 
 async function testGmail() {
   const btn      = document.getElementById('gmailTestBtn');
@@ -433,8 +407,6 @@ async function saveSettings() {
   const payload = {
     groq_api_key:       document.getElementById('groq_api_key').value.trim(),
     groq_model:         'llama-3.3-70b-versatile',
-    gemini_api_key:     document.getElementById('gemini_api_key').value.trim(),
-    gemini_model:       'gemini-3-flash-preview',
     gmail_user:         document.getElementById('gmail_user').value.trim(),
     reporting_manager:  document.getElementById('reporting_manager').value.trim(),
     department:         document.getElementById('department').value.trim(),

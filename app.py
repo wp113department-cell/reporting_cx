@@ -11,7 +11,6 @@ from email.mime.text import MIMEText
 from functools import wraps
 from flask import Flask, render_template, request, jsonify, redirect, session, abort
 from groq import Groq
-import google.generativeai as genai
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request
@@ -302,12 +301,6 @@ def get_user_groq_client(email):
     key = s.get('groq_api_key') or os.getenv('GROQ_API_KEY', '')
     return Groq(api_key=key)
 
-def get_user_gemini_key(email):
-    s = get_user_settings(email)
-    return s.get('gemini_api_key') or os.getenv('GEMINI_API_KEY', '')
-
-def get_user_gemini_model(email):
-    return 'gemini-3-flash-preview'
 
 def get_user_groq_model(email):
     return 'llama-3.3-70b-versatile'
@@ -636,31 +629,13 @@ RULES:
 - No meetings → [{{"name":"NA","duration":"NA","purpose":"NA"}}]
 - Return ONLY valid JSON."""
 
-    groq_error = None
-    try:
-        client = get_user_groq_client(user_email)
-        resp = client.chat.completions.create(
-            model=get_user_groq_model(user_email),
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.2, max_tokens=4096
-        )
-        return _parse_json(resp.choices[0].message.content.strip())
-    except Exception as e:
-        groq_error = e
-        print(f"⚠️  Groq failed: {e}. Switching to Gemini...")
-
-    gem_key = get_user_gemini_key(user_email)
-    if not gem_key:
-        raise Exception(f"Groq failed and Gemini API key not configured. Groq error: {groq_error}")
-    try:
-        genai.configure(api_key=gem_key)
-        gem  = genai.GenerativeModel(get_user_gemini_model(user_email))
-        resp = gem.generate_content(prompt)
-        result = _parse_json(resp.text.strip())
-        print("✅  Gemini fallback succeeded.")
-        return result
-    except Exception as gem_error:
-        raise Exception(f"Both LLMs failed.\nGroq: {groq_error}\nGemini: {gem_error}")
+    client = get_user_groq_client(user_email)
+    resp = client.chat.completions.create(
+        model=get_user_groq_model(user_email),
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.2, max_tokens=4096
+    )
+    return _parse_json(resp.choices[0].message.content.strip())
 
 
 # ─── DATE ─────────────────────────────────────────────────────────────────────
@@ -862,22 +837,6 @@ def api_validate_groq():
     except Exception as e:
         return jsonify({'valid': False, 'error': str(e)})
 
-@app.route('/api/validate/gemini', methods=['POST'])
-@login_required_api
-def api_validate_gemini():
-    data  = request.json or {}
-    key   = data.get('api_key', '').strip()
-    model = data.get('model', 'gemini-3-flash-preview').strip() or 'gemini-3-flash-preview'
-    if not key:
-        return jsonify({'valid': False, 'error': 'No API key provided'})
-    try:
-        genai.configure(api_key=key)
-        gem = genai.GenerativeModel(model)
-        gem.generate_content("Reply with just: OK",
-                             generation_config={"max_output_tokens": 5})
-        return jsonify({'valid': True, 'message': f'Gemini key is valid! Model "{model}" works.'})
-    except Exception as e:
-        return jsonify({'valid': False, 'error': str(e)})
 
 @app.route('/api/validate/gmail', methods=['POST'])
 @login_required_api
