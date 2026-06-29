@@ -1,0 +1,317 @@
+to:	
+vipinrajnair261@gmail.com
+cc:	
+developer4.sxope@gmail.com,
+ba.sxope@gmail.com,
+hresource2k19@gmail.com
+
+
+
+
+teams format :
+Work Update
+ 
+Date: 10/06/2026
+ 
+Project/Client Name - AKV2008
+ 
+    - Tested Shopify-to-Laravel webhook responses and confirmed that all integrations were working properly.
+    - Tested customer, product, order, and fulfillment events for create, update, and delete actions.
+    - Monitored Laravel logs and webhook responses to verify successful event processing.
+    - Tested bi-directional synchronization (Laravel to Shopify and Shopify to Laravel) and confirmed that everything was working as expected.
+ 
+Link:
+    - https://app.thecomfeecompany.com
+    - https://app.thecomfeecompany.com/orders/51
+ 
+Logins:
+    ** Admin:
+    - Email: 
+    - Password: 
+ 
+    ** Manufacturer:
+    - Email: 
+    - Password: 
+ 
+Actual Hours:
+    - 4 Hours
+ 
+Note:
+    - Could you please test the fulfillment functionality on any order and let me know if everything is working as expected?
+    - The module has been completed. Please let me know if any changes or improvements are required.
+    - All webhook synchronization bugs have been permanently patched. Please verify if the quantities and statuses update correctly for you.
+ 
+IMPORTANT NOTE:
+    - Have check you have not purchase a cPanel licence, cPanel license has not been purchased. Please purchase a valid cPanel license.
+    - The server is currently running on a trial license; once the trial period expires, the server may stop functioning.
+    - SS: https://prnt.sc/8-S82NDOlGbp
+ 
+Tomorrow's Task:
+    - As per the client's feedback.
+
+mail format :
+Date: 25/06/2026 
+
+Department: Production Team 
+
+Reporting Manager: Vipinraj Nair Sir 
+
+Total Attendance Hours: 9:30 Hours 
+
+Productive Hours: 7 Hours 
+
+ 
+
+Task / Ticket 
+
+Description of Work Done 
+
+Productive Hours Spent 
+
+Status 
+
+JRR2206 
+
+- Optimized n8n workflows and integrated functions for the Retail AI voice agent.  
+
+- Reviewed GHL settings and tested booking reschedule/cancellation workflows.  
+
+- Improved Cal.com integration logic and refined AI booking prompts. 
+
+3 Hours 
+
+In Progress 
+
+SRR1111 
+
+- Reviewed and validated the updated Q&A workflow implementation.  
+
+- Verified API responses, data flow, and dynamic prompt variables.  
+
+- Tested the PPS quiz and confirmed accurate results. 
+
+2 Hours 
+
+Completed 
+
+CX CHATBOT 
+
+- Redesigned the chatbot UI and improved responsiveness.  
+
+- Enhanced validations, animations, and centralized CSS/JS files.  
+
+- Created dynamic branded email templates with user-specific content. 
+
+2 Hours 
+
+Completed 
+
+ 
+
+ 
+
+ 
+
+Meeting Name 
+
+Duration 
+
+Purpose 
+
+NA 
+
+NA 
+
+NA 
+
+ 
+
+ 
+
+---------- 
+
+Output Summary: 
+
+ 
+
+JRR2206 - Retell AI Voice Agent & n8n Workflow Integration 
+
+ 
+
+Commits completed: 
+
+- Updated and optimized the n8n workflows in the local environment to improve functionality and workflow execution. 
+
+- Developed and integrated the required functions to support the Retail AI voice agent flow within the n8n workflows. 
+
+- Reviewed and verified GHL configurations, including contacts, automations, booking intake forms, and related settings. 
+
+- Tested the booking reschedule and cancellation processes, confirming that the Retail AI workflow was functioning correctly while identifying issues with the Cal.com integration. 
+
+- Added new nodes, conditional logic, and HTTP request nodes to validate inputs and retrieve the necessary data from Cal.com. 
+
+- Refined the final booking prompt for Retail AI in the local environment to minimize hallucinations and enhance response accuracy and consistency. 
+
+ 
+
+Modules/screens/features worked on: 
+
+- Retell AI Voice Agent & Conversation Flow Design 
+
+- n8n Webhook Triggers & Workflow Mapping 
+
+- Cal.com Digital Dental Booking Integration 
+
+- Sub-agent Prompts & Tool Configuration 
+
+- Workflow Documentation & PDF Export 
+
+ 
+
+QA/testing done: 
+
+- Tested voice and chat interactions with the AI agent to identify response consistency. 
+
+- Verified Retell AI function calls and corresponding n8n workflow executions. 
+
+- Audited webhook logs and response handling across n8n workflows. 
+
+- Validated the readability and completeness of generated workflow documentation. 
+
+ 
+
+Documentation completed: 
+
+- NA 
+
+ 
+
+Blockers / Dependencies: 
+
+- None 
+
+ 
+
+Tomorrow’s Planned Work: 
+
+- Continue with the further tasks. 
+
+ 
+
+SRR1111 - PPS Quiz & Q&A Workflow Integration 
+
+ 
+
+Commits completed: 
+
+- Reviewed the new Q&A document provided by the client and verified the related n8n workflow implementation. 
+
+- Checked n8n execution logs and validated the data flow, API requests, and responses for the newly added questions and answers. 
+
+- Reviewed the JavaScript node and dynamic data handling within the prompt to ensure all variables are being passed correctly. 
+
+- Tested the PPS quiz and confirmed that the answers are being returned accurately through the n8n workflow. 
+
+ 
+
+Modules/screens/features worked on: 
+
+- PPS Quiz Workflow Integration 
+
+- n8n Q&A Dynamic Data Handling 
+
+- Execution Logs & Data Flow Verification 
+
+- JavaScript Node & Prompt Variables Customization 
+
+- API Requests & Response Optimization 
+
+ 
+
+QA/testing done: 
+
+- Verified n8n workflow execution logs and data flow mapping. 
+
+- Tested the PPS quiz to ensure answers are accurately processed and returned. 
+
+- Audited API requests and responses for the newly added Q&A structure. 
+
+- Confirmed JavaScript node variables and dynamic data are correctly passed within the prompt. 
+
+ 
+
+Documentation completed: 
+
+- NA 
+
+ 
+
+Blockers / Dependencies: 
+
+- None 
+
+ 
+
+Tomorrow’s Planned Work: 
+
+- As per the client's feedback. 
+
+ 
+
+CX Chatbot - RAG Agent & Architecture Design 
+
+ 
+
+Commits completed: 
+
+- Redesigned the chatbot interface to align with the company’s branding, color scheme, and overall theme. 
+
+- Updated the JavaScript and CSS to enhance open/close animations and improve chat input field validations. 
+
+- Refactored the codebase by moving inline CSS and JavaScript into dedicated .css and .js files, creating a more organized and centralized structure. 
+
+- Optimized the chatbot layout to ensure responsiveness across all devices and screen sizes. 
+
+- Designed email templates with support for dynamically populated content and user-specific details. 
+
+- Incorporated company branding elements, color palettes, and dynamic user information into all email templates. 
+
+ 
+
+Modules/screens/features worked on: 
+
+- System Architecture & Core Feature Planning 
+
+- Knowledge Source Extraction (RAG Website Content) 
+
+- Conversation Flow & Implementation Roadmap 
+
+- RAG Integration with LangChain & LangGraph 
+
+ 
+
+QA/testing done: 
+
+- Reviewed and verified knowledge source page list. 
+
+- Validated feasibility of the conversational flow design. 
+
+- Assessed LangChain/LangGraph library integration requirements. 
+
+ 
+
+Documentation completed: 
+
+- NA 
+
+ 
+
+Blockers / Dependencies: 
+
+- None 
+
+ 
+
+Tomorrow’s Planned Work: 
+
+- Continue with the further tasks. 

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login — Daily Update Generator</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.card {
+  background: white;
+  border-radius: 16px;
+  padding: 44px 48px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+}
+.logo {
+  text-align: center;
+  margin-bottom: 28px;
+}
+.logo-icon {
+  width: 60px; height: 60px;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  margin-bottom: 14px;
+}
+.logo h1 { font-size: 1.35rem; color: #1e293b; font-weight: 700; }
+.logo p  { font-size: 0.85rem; color: #64748b; margin-top: 4px; }
+
+.step { display: none; }
+.step.active { display: block; }
+
+label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 6px;
+}
+input[type="email"],
+input[type="text"] {
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: #1e293b;
+  background: #f8fafc;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  margin-bottom: 16px;
+}
+input:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79,70,229,0.12);
+  background: white;
+}
+.btn {
+  width: 100%;
+  padding: 13px;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+}
+.btn:hover { opacity: 0.92; transform: translateY(-1px); }
+.btn:active { transform: scale(0.98); }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+.back-link {
+  display: block;
+  text-align: center;
+  margin-top: 14px;
+  font-size: 0.85rem;
+  color: #64748b;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.otp-hint {
+  font-size: 0.8rem;
+  color: #64748b;
+  background: #f1f5f9;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+.error-msg {
+  color: #ef4444;
+  font-size: 0.84rem;
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  background: #fef2f2;
+  border-radius: 8px;
+  display: none;
+}
+.success-msg {
+  color: #059669;
+  font-size: 0.84rem;
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  background: #f0fdf4;
+  border-radius: 8px;
+  display: none;
+}
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 20px 0;
+  color: #cbd5e1;
+  font-size: 0.75rem;
+}
+.divider::before, .divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e2e8f0;
+}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <div class="logo-icon">🤖</div>
+    <h1>Daily Update Generator</h1>
+    <p>AI-powered work report formatter</p>
+  </div>
+
+  <div id="errMsg"  class="error-msg"></div>
+  <div id="succMsg" class="success-msg"></div>
+
+  <!-- STEP 1: EMAIL -->
+  <div class="step active" id="step1">
+    <label for="emailInput">Your Email Address</label>
+    <input type="email" id="emailInput" placeholder="you@example.com"
+           onkeydown="if(event.key==='Enter') sendOtp()">
+    <button class="btn" onclick="sendOtp()" id="sendOtpBtn">Continue with OTP →</button>
+  </div>
+
+  <!-- STEP 2: OTP -->
+  <div class="step" id="step2">
+    <div class="otp-hint" id="otpHint">OTP sent! Check your email or the server terminal.</div>
+    <label for="otpInput">Enter 6-digit OTP</label>
+    <input type="text" id="otpInput" placeholder="123456" maxlength="6"
+           onkeydown="if(event.key==='Enter') verifyOtp()"
+           oninput="this.value=this.value.replace(/\D/g,'')">
+    <button class="btn" onclick="verifyOtp()" id="verifyBtn">Verify &amp; Login →</button>
+    <span class="back-link" onclick="goBack()">← Use a different email</span>
+  </div>
+</div>
+
+<script>
+let userEmail = '';
+
+function showErr(msg) {
+  const el = document.getElementById('errMsg');
+  el.textContent = msg;
+  el.style.display = 'block';
+  document.getElementById('succMsg').style.display = 'none';
+}
+function showSucc(msg) {
+  const el = document.getElementById('succMsg');
+  el.textContent = msg;
+  el.style.display = 'block';
+  document.getElementById('errMsg').style.display = 'none';
+}
+function clearMsgs() {
+  document.getElementById('errMsg').style.display = 'none';
+  document.getElementById('succMsg').style.display = 'none';
+}
+
+async function sendOtp() {
+  const email = document.getElementById('emailInput').value.trim().toLowerCase();
+  if (!email || !email.includes('@')) {
+    showErr('Please enter a valid email address.');
+    return;
+  }
+  userEmail = email;
+  const btn = document.getElementById('sendOtpBtn');
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+  clearMsgs();
+
+  try {
+    const res  = await fetch('/api/auth/send-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json();
+    if (data.success) {
+      document.getElementById('otpHint').textContent = data.message;
+      document.getElementById('step1').classList.remove('active');
+      document.getElementById('step2').classList.add('active');
+      document.getElementById('otpInput').focus();
+      showSucc(data.message);
+    } else {
+      showErr(data.error || 'Failed to send OTP');
+    }
+  } catch(e) {
+    showErr('Network error. Is the server running?');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Continue with OTP →';
+  }
+}
+
+async function verifyOtp() {
+  const otp = document.getElementById('otpInput').value.trim();
+  if (otp.length !== 6) {
+    showErr('Please enter the 6-digit OTP.');
+    return;
+  }
+  const btn = document.getElementById('verifyBtn');
+  btn.disabled = true;
+  btn.textContent = 'Verifying...';
+  clearMsgs();
+
+  try {
+    const res  = await fetch('/api/auth/verify-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: userEmail, otp })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showSucc('Login successful! Redirecting...');
+      setTimeout(() => window.location.href = data.redirect, 600);
+    } else {
+      showErr(data.error || 'Invalid OTP');
+    }
+  } catch(e) {
+    showErr('Network error.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Verify & Login →';
+  }
+}
+
+function goBack() {
+  clearMsgs();
+  document.getElementById('step2').classList.remove('active');
+  document.getElementById('step1').classList.add('active');
+  document.getElementById('otpInput').value = '';
+}
+</script>
+</body>
+</html>

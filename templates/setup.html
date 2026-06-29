@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Setup — Daily Update Generator</title>
+<style>
+:root {
+  --primary: #4f46e5;
+  --primary-dark: #3730a3;
+  --success: #10b981;
+  --danger: #ef4444;
+  --bg: #f1f5f9;
+  --border: #e2e8f0;
+  --muted: #64748b;
+  --text: #1e293b;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+.header {
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: white;
+  padding: 16px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.header h1 { font-size: 1.1rem; font-weight: 700; }
+.header-right { display: flex; align-items: center; gap: 12px; font-size: 0.85rem; opacity: 0.9; }
+.logout-btn {
+  background: rgba(255,255,255,0.15);
+  border: none;
+  color: white;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-family: inherit;
+  transition: background 0.2s;
+}
+.logout-btn:hover { background: rgba(255,255,255,0.25); }
+
+.container { max-width: 800px; margin: 32px auto; padding: 0 20px 40px; }
+
+.page-title { margin-bottom: 24px; }
+.page-title h2 { font-size: 1.4rem; font-weight: 700; color: var(--text); }
+.page-title p  { font-size: 0.88rem; color: var(--muted); margin-top: 4px; }
+
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px 28px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  border: 1px solid var(--border);
+  margin-bottom: 18px;
+}
+.section-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 14px;
+  border-bottom: 1.5px solid var(--bg);
+  margin-bottom: 18px;
+}
+.form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 14px; }
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-group label { font-size: 0.75rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; }
+.form-group input, .form-group textarea {
+  padding: 10px 13px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  color: var(--text);
+  background: #f8fafc;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.form-group input:focus, .form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
+  background: white;
+}
+.form-group textarea { min-height: 70px; resize: vertical; }
+
+.hint { font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
+
+.btn {
+  padding: 11px 22px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 700;
+  font-family: inherit;
+  transition: all 0.18s;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(79,70,229,0.3); }
+.btn-success { background: var(--success); color: white; }
+.btn-success:hover { background: #059669; }
+.btn-outline { background: white; color: var(--primary); border: 2px solid var(--primary); }
+.btn-outline:hover { background: var(--primary); color: white; }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none !important; }
+
+.drive-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+.drive-status.connected { background: #f0fdf4; color: #065f46; border: 1.5px solid #bbf7d0; }
+.drive-status.disconnected { background: #fef2f2; color: #991b1b; border: 1.5px solid #fecaca; }
+
+.save-row { display: flex; gap: 12px; align-items: center; padding-top: 10px; flex-wrap: wrap; }
+.toast-wrap { position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 9px; }
+.toast { padding: 12px 18px; border-radius: 10px; color: white; font-weight: 600; font-size: 0.88rem; display: flex; align-items: center; gap: 9px; box-shadow: 0 10px 30px rgba(0,0,0,.12); animation: toastIn 0.28s ease; min-width: 240px; }
+.toast.success { background: #10b981; }
+.toast.error   { background: #ef4444; }
+@keyframes toastIn { from { transform: translateX(60px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+.badge-connected { background: #d1fae5; color: #065f46; padding: 2px 10px; border-radius: 10px; font-size: 0.75rem; font-weight: 700; }
+.badge-disconnected { background: #fee2e2; color: #991b1b; padding: 2px 10px; border-radius: 10px; font-size: 0.75rem; font-weight: 700; }
+
+.test-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+.btn-test { padding: 6px 14px; font-size: 0.78rem; font-weight: 700; border: 1.5px solid var(--primary); background: white; color: var(--primary); border-radius: 6px; cursor: pointer; font-family: inherit; transition: all 0.15s; }
+.btn-test:hover { background: var(--primary); color: white; }
+.btn-test:disabled { opacity: 0.5; cursor: not-allowed; }
+.test-status { font-size: 0.8rem; font-weight: 600; display: none; }
+.test-status.ok  { color: #059669; }
+.test-status.err { color: #dc2626; }
+
+.guide-accordion { border: 1.5px solid var(--border); border-radius: 10px; margin-bottom: 12px; overflow: hidden; }
+.guide-header { display: flex; justify-content: space-between; align-items: center; padding: 13px 18px; cursor: pointer; font-size: 0.88rem; font-weight: 700; color: var(--text); background: #f8fafc; user-select: none; }
+.guide-header:hover { background: #f1f5f9; }
+.guide-header .arr { font-size: 0.7rem; color: var(--muted); transition: transform 0.2s; }
+.guide-body { display: none; padding: 16px 18px 18px; font-size: 0.84rem; line-height: 1.7; color: #334155; background: white; }
+.guide-body.open { display: block; }
+.guide-body ol { padding-left: 20px; }
+.guide-body ol li { margin-bottom: 8px; }
+.guide-body code { background: #f1f5f9; padding: 1px 6px; border-radius: 4px; font-size: 0.82rem; font-family: monospace; color: #4f46e5; }
+.guide-body .warn { background: #fff7ed; border: 1.5px solid #fed7aa; border-radius: 8px; padding: 10px 14px; margin: 10px 0; color: #9a3412; font-size: 0.82rem; }
+.guide-body .note { background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 8px; padding: 10px 14px; margin: 10px 0; color: #1e40af; font-size: 0.82rem; }
+</style>
+</head>
+<body>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<header class="header">
+  <h1>🤖 Daily Update Generator — Settings</h1>
+  <div class="header-right">
+    <span>{{ user_email }}</span>
+    <button class="logout-btn" onclick="window.location='/logout'">Logout</button>
+  </div>
+</header>
+
+<div class="container">
+  <div class="page-title">
+    <h2>Account Setup</h2>
+    <p>Configure your details once — the app remembers everything.</p>
+  </div>
+
+  <!-- SECTION 1: LLM API KEYS -->
+  <div class="card">
+    <div class="section-title">🔑 AI / LLM API Keys</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Groq API Key</label>
+        <input type="text" id="groq_api_key" value="{{ settings.get('groq_api_key','') }}" placeholder="gsk_...">
+        <span class="hint">Get free key at <a href="https://console.groq.com" target="_blank">console.groq.com</a> — Model: <strong>llama-3.3-70b-versatile</strong></span>
+      </div>
+    </div>
+    <div class="test-row">
+      <button class="btn-test" onclick="testGroq()" id="groqTestBtn">🧪 Test Groq Key</button>
+      <span class="test-status" id="groqStatus"></span>
+    </div>
+    <div class="form-row" style="margin-top:14px;">
+      <div class="form-group">
+        <label>Gemini API Key (Fallback)</label>
+        <input type="text" id="gemini_api_key" value="{{ settings.get('gemini_api_key','') }}" placeholder="AIza... or AQ...">
+        <span class="hint">Get free key at <a href="https://aistudio.google.com" target="_blank">aistudio.google.com</a> — Model: <strong>gemini-3-flash-preview</strong></span>
+      </div>
+    </div>
+    <div class="test-row">
+      <button class="btn-test" onclick="testGemini()" id="geminiTestBtn">🧪 Test Gemini Key</button>
+      <span class="test-status" id="geminiStatus"></span>
+    </div>
+  </div>
+
+  <!-- SECTION 2: GMAIL -->
+  <div class="card">
+    <div class="section-title">📧 Gmail (for sending your daily mail)</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Your Gmail Address</label>
+        <input type="text" id="gmail_user" value="{{ settings.get('gmail_user','') }}" placeholder="you@gmail.com">
+      </div>
+      <div class="form-group">
+        <label>Gmail App Password</label>
+        <input type="password" id="gmail_app_password" placeholder="16-char app password (leave blank to keep current)">
+        <span class="hint">See guide below → How to create Gmail App Password</span>
+      </div>
+    </div>
+    <div class="test-row">
+      <button class="btn-test" onclick="testGmail()" id="gmailTestBtn">🧪 Test Gmail Connection</button>
+      <span class="test-status" id="gmailStatus"></span>
+    </div>
+  </div>
+
+  <!-- SECTION 3: EMAIL CONFIG -->
+  <div class="card">
+    <div class="section-title">📋 Daily Report Config</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Reporting Manager Name</label>
+        <input type="text" id="reporting_manager" value="{{ settings.get('reporting_manager','') }}" placeholder="Vipinraj Nair Sir">
+      </div>
+      <div class="form-group">
+        <label>Department</label>
+        <input type="text" id="department" value="{{ settings.get('department','Production Team') }}" placeholder="Production Team">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Send Mail To (TO email)</label>
+        <input type="text" id="to_email" value="{{ settings.get('to_email','') }}" placeholder="boss@example.com">
+      </div>
+      <div class="form-group">
+        <label>CC Emails (comma-separated)</label>
+        <input type="text" id="cc_emails" value="{{ settings.get('cc_emails','') }}" placeholder="cc1@example.com, cc2@example.com">
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 4: GOOGLE DRIVE -->
+  <div class="card">
+    <div class="section-title">☁️ Google Drive (saves .txt &amp; .docx date-wise)</div>
+
+    {% if drive_connected %}
+    <div class="drive-status connected">✅ Google Drive is connected</div>
+    {% else %}
+    <div class="drive-status disconnected">❌ Google Drive not connected</div>
+    {% endif %}
+
+    {% if request.args.get('drive') == 'connected' %}
+    <p style="color:#059669;font-weight:600;margin-bottom:12px;">✅ Google Drive connected successfully!</p>
+    {% endif %}
+
+    <button class="btn btn-outline" onclick="connectDrive()" id="driveBtn">
+      ☁️ {% if drive_connected %}Reconnect Google Drive{% else %}Connect Google Drive{% endif %}
+    </button>
+    <p style="font-size:0.78rem;color:var(--muted);margin-top:8px;">Opens Google login in this tab. Log in with your <strong>work Google account</strong>.</p>
+    <div id="driveErrBox" style="display:none;background:#fef2f2;border:1.5px solid #fecaca;border-radius:8px;padding:12px 16px;margin-top:12px;">
+      <p style="color:#991b1b;font-weight:700;margin-bottom:4px;">❌ Drive connection failed</p>
+      <p id="driveErrMsg" style="font-size:0.82rem;color:#7f1d1d;"></p>
+    </div>
+  </div>
+
+  <!-- SECTION 5: SETUP GUIDES -->
+  <div class="card">
+    <div class="section-title">📖 Setup Guides</div>
+    <p style="font-size:0.83rem;color:var(--muted);margin-bottom:14px;">Click a guide to expand step-by-step instructions.</p>
+
+    <!-- GUIDE 1: Gmail App Password -->
+    <div class="guide-accordion">
+      <div class="guide-header" onclick="toggleGuide('gmail-guide')">
+        <span>📧 How to Create Gmail App Password</span>
+        <span class="arr" id="gmail-guide-arr">▼</span>
+      </div>
+      <div class="guide-body" id="gmail-guide">
+        <div class="note">ℹ️ Gmail App Password is a 16-character password that lets this app send emails on your behalf. You need 2-Step Verification enabled first.</div>
+        <ol>
+          <li>Go to <code>myaccount.google.com</code> and sign in with the Gmail you want to use.</li>
+          <li>Click <strong>Security</strong> in the left menu.</li>
+          <li>Under "How you sign in to Google", click <strong>2-Step Verification</strong>. Enable it if not already on.</li>
+          <li>Go back to <strong>Security</strong> → scroll down and find <strong>App passwords</strong> (it appears only after 2-Step Verification is on).</li>
+          <li>Click <strong>App passwords</strong>. You may be asked to re-enter your password.</li>
+          <li>In the "App name" field type: <code>Daily Update App</code> and click <strong>Create</strong>.</li>
+          <li>Google shows a <strong>16-character password</strong> (e.g. <code>abcd efgh ijkl mnop</code>). Copy it.</li>
+          <li>Paste it into the <strong>Gmail App Password</strong> field above (without spaces).</li>
+          <li>Click <strong>🧪 Test Gmail Connection</strong> to verify it works.</li>
+        </ol>
+        <div class="warn">⚠️ If you don't see "App passwords", make sure 2-Step Verification is fully enabled and you're not using a managed/workspace account with restrictions.</div>
+      </div>
+    </div>
+
+    <!-- GUIDE 2: Fix 403 Error -->
+    <div class="guide-accordion">
+      <div class="guide-header" onclick="toggleGuide('fix403-guide')">
+        <span>🔧 Fix Google 403 "Access Blocked" Error</span>
+        <span class="arr" id="fix403-guide-arr">▼</span>
+      </div>
+      <div class="guide-body" id="fix403-guide">
+        <div class="warn">⚠️ You get this error when your Google email is not added as a test user in the Google Cloud Console project that owns the credentials.json.</div>
+        <ol>
+          <li>Open <code>console.cloud.google.com</code> and sign in with the Google account that owns the app (the account that created the project <strong>dailyupdates-500612</strong>).</li>
+          <li>In the top bar, make sure the project <strong>dailyupdates-500612</strong> is selected.</li>
+          <li>In the left menu go to <strong>APIs &amp; Services</strong> → <strong>OAuth consent screen</strong>.</li>
+          <li>Scroll down to the <strong>Test users</strong> section.</li>
+          <li>Click <strong>+ Add users</strong>.</li>
+          <li>Enter the work email you want to connect (e.g. <code>wp113.department@gmail.com</code>). Add all emails that will use this app.</li>
+          <li>Click <strong>Save</strong>.</li>
+          <li>Come back here and click <strong>Connect Google Drive</strong> again.</li>
+        </ol>
+        <div class="note">ℹ️ Only users added here can connect during testing. You can add up to 100 test users. If you need more, you can publish the app (requires Google verification).</div>
+      </div>
+    </div>
+
+    <!-- GUIDE 3: Connect Google Drive -->
+    <div class="guide-accordion">
+      <div class="guide-header" onclick="toggleGuide('drive-guide')">
+        <span>☁️ How to Connect Google Drive</span>
+        <span class="arr" id="drive-guide-arr">▼</span>
+      </div>
+      <div class="guide-body" id="drive-guide">
+        <div class="note">ℹ️ This only needs to be done once. After connecting, the app saves your daily .txt and .docx files automatically to your work Google Drive.</div>
+        <ol>
+          <li>Make sure your email is added as a test user (see guide above if you got a 403 error).</li>
+          <li>Make sure <code>http://localhost:5000/oauth2callback</code> is listed as an <strong>Authorized Redirect URI</strong> in your OAuth 2.0 Client:
+            <ul style="margin-top:4px;">
+              <li>Google Cloud Console → <strong>APIs &amp; Services</strong> → <strong>Credentials</strong></li>
+              <li>Click your OAuth 2.0 Client ID</li>
+              <li>Under "Authorized redirect URIs" → click <strong>+ Add URI</strong> → type <code>http://localhost:5000/oauth2callback</code></li>
+              <li>Click <strong>Save</strong></li>
+            </ul>
+          </li>
+          <li>Click <strong>Connect Google Drive</strong> above.</li>
+          <li>A Google login page opens. Select your <strong>work Google account</strong>.</li>
+          <li>If you see a warning "Google hasn't verified this app" — click <strong>Advanced</strong> → <strong>Go to dailyupdates (unsafe)</strong>. This is safe for your own private app.</li>
+          <li>Click <strong>Allow</strong> to grant Drive access.</li>
+          <li>You'll be redirected back here with a "✅ Connected" message.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <!-- SAVE -->
+  <div class="card">
+    <div class="save-row">
+      <button class="btn btn-primary" onclick="saveSettings()" id="saveBtn" style="padding:13px 32px;font-size:0.95rem;">
+        💾 Save All Settings
+      </button>
+      {% if settings.get('setup_done') %}
+      <a href="/" class="btn btn-outline">← Back to App</a>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+
+<script>
+function toggleGuide(id) {
+  const body = document.getElementById(id);
+  const arr  = document.getElementById(id + '-arr');
+  body.classList.toggle('open');
+  arr.textContent = body.classList.contains('open') ? '▲' : '▼';
+}
+
+function setTestStatus(elId, ok, msg) {
+  const el = document.getElementById(elId);
+  el.className = 'test-status ' + (ok ? 'ok' : 'err');
+  el.textContent = (ok ? '✅ ' : '❌ ') + msg;
+  el.style.display = 'inline';
+}
+
+async function testGroq() {
+  const btn = document.getElementById('groqTestBtn');
+  const key = document.getElementById('groq_api_key').value.trim();
+  if (!key) { setTestStatus('groqStatus', false, 'Enter an API key first'); return; }
+  btn.disabled = true; btn.textContent = 'Testing...';
+  try {
+    const res  = await fetch('/api/validate/groq', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ api_key: key, model: 'llama-3.3-70b-versatile' })
+    });
+    const data = await res.json();
+    setTestStatus('groqStatus', data.valid, data.valid ? data.message : data.error);
+  } catch(e) { setTestStatus('groqStatus', false, e.message); }
+  finally { btn.disabled = false; btn.textContent = '🧪 Test Groq Key'; }
+}
+
+async function testGemini() {
+  const btn = document.getElementById('geminiTestBtn');
+  const key = document.getElementById('gemini_api_key').value.trim();
+  if (!key) { setTestStatus('geminiStatus', false, 'Enter an API key first'); return; }
+  btn.disabled = true; btn.textContent = 'Testing...';
+  try {
+    const res  = await fetch('/api/validate/gemini', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ api_key: key, model: 'gemini-3-flash-preview' })
+    });
+    const data = await res.json();
+    setTestStatus('geminiStatus', data.valid, data.valid ? data.message : data.error);
+  } catch(e) { setTestStatus('geminiStatus', false, e.message); }
+  finally { btn.disabled = false; btn.textContent = '🧪 Test Gemini Key'; }
+}
+
+async function testGmail() {
+  const btn      = document.getElementById('gmailTestBtn');
+  const user     = document.getElementById('gmail_user').value.trim();
+  const pass     = document.getElementById('gmail_app_password').value.trim();
+  if (!user)  { setTestStatus('gmailStatus', false, 'Enter Gmail address first'); return; }
+  if (!pass)  { setTestStatus('gmailStatus', false, 'Enter App Password to test'); return; }
+  btn.disabled = true; btn.textContent = 'Testing...';
+  try {
+    const res  = await fetch('/api/validate/gmail', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ gmail_user: user, gmail_app_password: pass })
+    });
+    const data = await res.json();
+    setTestStatus('gmailStatus', data.valid, data.valid ? data.message : data.error);
+  } catch(e) { setTestStatus('gmailStatus', false, e.message); }
+  finally { btn.disabled = false; btn.textContent = '🧪 Test Gmail Connection'; }
+}
+
+async function saveSettings() {
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+
+  const pass = document.getElementById('gmail_app_password').value.trim();
+  const payload = {
+    groq_api_key:       document.getElementById('groq_api_key').value.trim(),
+    groq_model:         'llama-3.3-70b-versatile',
+    gemini_api_key:     document.getElementById('gemini_api_key').value.trim(),
+    gemini_model:       'gemini-3-flash-preview',
+    gmail_user:         document.getElementById('gmail_user').value.trim(),
+    reporting_manager:  document.getElementById('reporting_manager').value.trim(),
+    department:         document.getElementById('department').value.trim(),
+    to_email:           document.getElementById('to_email').value.trim(),
+    cc_emails:          document.getElementById('cc_emails').value.trim(),
+  };
+  if (pass) payload.gmail_app_password = pass;
+
+  try {
+    const res  = await fetch('/api/settings/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('success', '✅ Settings saved!');
+      setTimeout(() => window.location.href = '/', 1200);
+    } else {
+      showToast('error', data.error || 'Save failed');
+    }
+  } catch(e) {
+    showToast('error', e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '💾 Save All Settings';
+  }
+}
+
+async function connectDrive() {
+  const btn = document.getElementById('driveBtn');
+  btn.disabled = true;
+  btn.textContent = 'Opening Google...';
+  document.getElementById('driveErrBox').style.display = 'none';
+  try {
+    const res  = await fetch('/api/drive/start-auth', { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      showToast('success', 'Redirecting to Google login...');
+      window.location.href = data.auth_url;
+    } else {
+      showToast('error', data.error || 'Could not start Drive auth');
+      btn.disabled = false;
+      btn.textContent = '☁️ Connect Google Drive';
+    }
+  } catch(e) {
+    showToast('error', e.message);
+    btn.disabled = false;
+    btn.textContent = '☁️ Connect Google Drive';
+  }
+}
+
+function showToast(type, msg) {
+  const wrap = document.getElementById('toastWrap');
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.innerHTML = `<span>${type==='success'?'✓':'✕'}</span><span>${msg}</span>`;
+  wrap.appendChild(t);
+  setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity 0.3s'; setTimeout(()=>t.remove(),350); }, 4000);
+}
+</script>
+</body>
+</html>

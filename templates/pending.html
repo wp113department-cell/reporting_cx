@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="gu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>અરજી સ્વીકૃત — Daily Update Generator</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.card {
+  background: white;
+  border-radius: 20px;
+  padding: 48px 52px;
+  width: 100%;
+  max-width: 520px;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.28);
+  text-align: center;
+}
+.icon {
+  font-size: 64px;
+  margin-bottom: 12px;
+  display: block;
+}
+.title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin-bottom: 6px;
+}
+.subtitle {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  margin-bottom: 32px;
+}
+.message-box {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 28px 32px;
+  text-align: justify;
+  direction: ltr;
+  font-size: 1rem;
+  color: #334155;
+  line-height: 2;
+}
+.message-box p { margin-bottom: 10px; text-align: left; }
+.message-box p:last-child { text-align: center; }
+.message-box .highlight {
+  color: #7c3aed;
+  font-weight: 700;
+}
+.footer-note {
+  margin-top: 28px;
+  font-size: 0.78rem;
+  color: #94a3b8;
+}
+.email-badge {
+  display: inline-block;
+  background: #ede9fe;
+  color: #7c3aed;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-bottom: 24px;
+}
+.logout-link {
+  display: inline-block;
+  margin-top: 20px;
+  font-size: 0.82rem;
+  color: #94a3b8;
+  text-decoration: none;
+  cursor: pointer;
+}
+.logout-link:hover { color: #64748b; }
+</style>
+</head>
+<body>
+<div class="card">
+  <span class="icon">🏛️</span>
+  <div class="title">અરજી સ્વીકૃત</div>
+  <div class="subtitle">Application Submitted</div>
+
+  <div class="email-badge">{{ user_email }}</div>
+
+  <div class="message-box">
+    <p>અરે ભાઈ,</p>
+    <p>
+      તમારી અરજી <span class="highlight">માનનીય ભાસ્કર બારોટ સાહેબશ્રી</span>ના
+      દરબારમાં રજૂ કરી દેવામાં આવી છે.
+    </p>
+    <p>
+      હવે જો સાહેબશ્રીની મૂછે તાવ હશે, ચાનો મૂડ સરસ હશે
+      અને કૃપા દ્રષ્ટિ પડશે તો તમારી અરજી મંજૂર થશે. 😄
+    </p>
+    <p>
+      <strong>૨ વર્કિંગ દિવસ</strong> સુધી ધીરજ રાખજો.
+    </p>
+    <p>
+      એટલામાં ફોન, મેસેજ, ઈમેલ કે માથાકૂટ કરવાની જરૂર નથી.<br>
+      દરબારનો હુકમ સમય આવે પોતે જ આવશે.
+    </p>
+    <p><strong>જય દરબાર! 🙏</strong></p>
+  </div>
+
+  <div class="footer-note">
+    You will receive an email once access is granted.<br>
+    You can then login using OTP.
+  </div>
+
+  <a class="logout-link" href="/logout">← Back to login</a>
+</div>
+</body>
+</html>

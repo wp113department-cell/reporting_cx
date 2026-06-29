@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Approval — Daily Update Generator</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.card {
+  background: white;
+  border-radius: 16px;
+  padding: 48px 52px;
+  max-width: 460px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+}
+.icon { font-size: 56px; margin-bottom: 16px; display: block; }
+h2 { font-size: 1.4rem; font-weight: 800; color: #1e293b; margin-bottom: 10px; }
+p  { font-size: 0.9rem; color: #64748b; line-height: 1.6; }
+a  { display: inline-block; margin-top: 24px; color: #4f46e5; font-size: 0.85rem; text-decoration: none; }
+a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="card">
+  {% if success %}
+  <span class="icon">✅</span>
+  <h2>Access Approved!</h2>
+  <p>{{ message }}<br>A confirmation email has been sent to the user.</p>
+  {% else %}
+  <span class="icon">❌</span>
+  <h2>Invalid Link</h2>
+  <p>{{ message }}</p>
+  {% endif %}
+  <a href="/">← Go to App</a>
+</div>
+</body>
+</html>

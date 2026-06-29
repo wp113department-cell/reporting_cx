@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Work Update Generator</title>
+<style>
+:root {
+  --primary: #4f46e5;
+  --primary-dark: #3730a3;
+  --primary-light: #818cf8;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --bg: #f1f5f9;
+  --card: #ffffff;
+  --text: #1e293b;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --radius: 12px;
+  --shadow: 0 2px 8px rgba(0,0,0,0.08);
+  --shadow-lg: 0 10px 30px rgba(0,0,0,0.12);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* HEADER */
+.header {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  color: white;
+  padding: 18px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 4px 20px rgba(79,70,229,0.35);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.header-left { display: flex; align-items: center; gap: 12px; }
+.header-icon {
+  width: 42px; height: 42px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+}
+.header h1 { font-size: 1.25rem; font-weight: 700; }
+.header p { font-size: 0.8rem; opacity: 0.8; margin-top: 2px; }
+.date-badge {
+  background: rgba(255,255,255,0.18);
+  padding: 8px 18px;
+  border-radius: 20px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  backdrop-filter: blur(10px);
+}
+
+/* CONTAINER */
+.container { max-width: 1100px; margin: 0 auto; padding: 28px 20px; }
+
+/* TABS */
+.tabs {
+  display: flex;
+  gap: 4px;
+  background: white;
+  padding: 5px;
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  width: fit-content;
+  margin-bottom: 24px;
+}
+.tab-btn {
+  padding: 9px 22px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-radius: 7px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--muted);
+  transition: all 0.2s;
+}
+.tab-btn.active { background: var(--primary); color: white; }
+.tab-btn:hover:not(.active) { background: #f1f5f9; color: var(--text); }
+
+/* CARDS */
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 22px 26px;
+  box-shadow: var(--shadow);
+  margin-bottom: 18px;
+  border: 1px solid var(--border);
+}
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1.5px solid var(--bg);
+}
+.card-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* FORM */
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-group label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 10px 13px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  color: var(--text);
+  background: #f8fafc;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  resize: vertical;
+}
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79,70,229,0.12);
+  background: white;
+}
+.form-group textarea { min-height: 92px; line-height: 1.5; }
+.form-group input[readonly] { background: #eef2ff; cursor: default; color: var(--primary); font-weight: 600; }
+
+/* TASK CARDS */
+.task-card {
+  background: #f8fafc;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 20px;
+  margin-bottom: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  position: relative;
+}
+.task-card:hover { border-color: #c7d2fe; box-shadow: 0 2px 12px rgba(79,70,229,0.08); }
+.task-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.task-badge {
+  background: var(--primary);
+  color: white;
+  padding: 3px 12px;
+  border-radius: 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+/* BUTTONS */
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-weight: 600;
+  font-family: inherit;
+  transition: all 0.18s;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  text-decoration: none;
+}
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: var(--primary-dark); box-shadow: 0 4px 14px rgba(79,70,229,0.4); transform: translateY(-1px); }
+.btn-success { background: var(--success); color: white; }
+.btn-success:hover { background: #059669; box-shadow: 0 4px 14px rgba(16,185,129,0.4); transform: translateY(-1px); }
+.btn-outline { background: white; color: var(--primary); border: 2px solid var(--primary); }
+.btn-outline:hover { background: var(--primary); color: white; }
+.btn-ghost { background: #f1f5f9; color: var(--muted); }
+.btn-ghost:hover { background: #e2e8f0; color: var(--text); }
+.btn-danger-ghost { background: none; border: none; color: var(--danger); cursor: pointer; font-family: inherit; font-size: 0.82rem; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; padding: 6px 10px; border-radius: 6px; transition: background 0.2s; }
+.btn-danger-ghost:hover { background: #fef2f2; }
+.btn-sm { padding: 6px 14px; font-size: 0.8rem; }
+.btn-lg { padding: 14px 36px; font-size: 1rem; border-radius: 50px; }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+
+/* GENERATE BUTTON */
+.generate-wrap { display: flex; justify-content: center; padding: 18px 0 10px; }
+.btn-generate {
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: white;
+  box-shadow: 0 6px 20px rgba(79,70,229,0.38);
+}
+.btn-generate:hover {
+  box-shadow: 0 10px 28px rgba(79,70,229,0.5);
+  transform: translateY(-2px);
+}
+
+/* LOADING */
+.loading-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15,23,42,0.55);
+  z-index: 9000;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(3px);
+}
+.loading-box {
+  background: white;
+  padding: 32px 44px;
+  border-radius: 16px;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+}
+.big-spinner {
+  width: 52px;
+  height: 52px;
+  border: 4px solid #e0e7ff;
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+  margin: 0 auto 16px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-box h3 { color: var(--primary); font-size: 1rem; margin-bottom: 5px; }
+.loading-box p { color: var(--muted); font-size: 0.84rem; }
+
+/* RESULTS */
+.results-section { display: none; }
+.results-section.visible { display: block; }
+
+.output-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+@media (max-width: 780px) { .output-grid { grid-template-columns: 1fr; } }
+
+.teams-box {
+  background: #0f172a;
+  color: #e2e8f0;
+  border-radius: 10px;
+  padding: 18px;
+  font-family: 'Courier New', Consolas, monospace;
+  font-size: 0.82rem;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  max-height: 460px;
+  overflow-y: auto;
+  word-break: break-word;
+}
+.teams-box::-webkit-scrollbar { width: 6px; }
+.teams-box::-webkit-scrollbar-track { background: #1e293b; border-radius: 3px; }
+.teams-box::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+
+.email-frame { width: 100%; height: 460px; border: none; border-radius: 10px; background: white; }
+
+/* SECTION DIVIDER */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 22px 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.divider::before, .divider::after {
+  content: '';
+  flex: 1;
+  height: 1.5px;
+  background: var(--border);
+}
+
+/* ACTION BAR */
+.action-bar {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding: 10px 0 6px;
+}
+.email-note {
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+/* HISTORY */
+.history-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.history-table th {
+  background: var(--primary);
+  color: white;
+  padding: 12px 14px;
+  text-align: left;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.history-table td { padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.history-table tbody tr:hover td { background: #f8fafc; }
+.ticket-chip {
+  display: inline-block;
+  background: #eef2ff;
+  color: var(--primary);
+  padding: 2px 9px;
+  border-radius: 10px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  margin: 2px;
+}
+.empty-state {
+  text-align: center;
+  padding: 50px 20px;
+  color: var(--muted);
+}
+.empty-state .empty-icon { font-size: 3rem; margin-bottom: 12px; }
+
+/* MODAL */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15,23,42,0.6);
+  z-index: 8000;
+  overflow-y: auto;
+  backdrop-filter: blur(3px);
+}
+.modal-box {
+  max-width: 860px;
+  margin: 40px auto;
+  padding: 20px;
+}
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.6rem;
+  cursor: pointer;
+  color: var(--muted);
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: color 0.2s;
+}
+.modal-close:hover { color: var(--danger); }
+.code-block {
+  background: #0f172a;
+  color: #e2e8f0;
+  border-radius: 10px;
+  padding: 20px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.82rem;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-x: auto;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+/* AUTOCOMPLETE */
+.ac-wrapper { position: relative; }
+.ac-list {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: white;
+  border: 2px solid var(--primary);
+  border-radius: 8px;
+  z-index: 500;
+  max-height: 180px;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+}
+.ac-item {
+  padding: 9px 13px;
+  cursor: pointer;
+  font-size: 0.88rem;
+  transition: background 0.1s;
+}
+.ac-item:hover { background: #eef2ff; color: var(--primary); font-weight: 600; }
+
+/* TOAST */
+.toast-wrap {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.toast {
+  padding: 13px 18px;
+  border-radius: 10px;
+  color: white;
+  font-weight: 600;
+  font-size: 0.88rem;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  box-shadow: var(--shadow-lg);
+  animation: toastIn 0.28s ease;
+  min-width: 260px;
+  max-width: 380px;
+}
+.toast.success { background: #10b981; }
+.toast.error { background: #ef4444; }
+.toast.info { background: var(--primary); }
+.toast.warning { background: var(--warning); color: #1e293b; }
+.toast-icon { font-size: 1.1rem; flex-shrink: 0; }
+@keyframes toastIn {
+  from { transform: translateX(60px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+/* BADGE */
+.badge {
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+.badge-blue { background: #dbeafe; color: #1d4ed8; }
+.badge-green { background: #d1fae5; color: #065f46; }
+
+/* SCROLL */
+::-webkit-scrollbar { width: 7px; height: 7px; }
+::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+</style>
+</head>
+<body>
+
+<!-- LOADING OVERLAY -->
+<div class="loading-overlay" id="loadingOverlay" style="display:none;">
+  <div class="loading-box">
+    <div class="big-spinner"></div>
+    <h3>Generating your update...</h3>
+    <p>AI is formatting your work report professionally</p>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-left">
+    <div class="header-icon">🤖</div>
+    <div>
+      <h1>Daily Work Update Generator</h1>
+      <p>AI-powered professional report formatter</p>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+    <span id="driveStatusBadge" style="font-size:0.78rem;padding:4px 12px;border-radius:12px;background:rgba(255,255,255,0.15);display:none;">☁️ Drive</span>
+    <div class="date-badge" id="headerDate">Loading date...</div>
+    <a href="/setup" style="background:rgba(255,255,255,0.15);color:white;padding:6px 14px;border-radius:6px;font-size:0.82rem;font-weight:600;text-decoration:none;">⚙ Settings</a>
+    <a href="/logout" style="background:rgba(255,255,255,0.15);color:white;padding:6px 14px;border-radius:6px;font-size:0.82rem;font-weight:600;text-decoration:none;">Logout</a>
+  </div>
+</header>
+
+<!-- MAIN CONTENT -->
+<div class="container">
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab-btn active" id="tabFormBtn" onclick="switchTab('form', this)">📝 Daily Update</button>
+    <button class="tab-btn" id="tabHistBtn" onclick="switchTab('history', this)">📅 History</button>
+  </div>
+
+  <!-- ===================== FORM TAB ===================== -->
+  <div id="formTab">
+
+    <!-- General Info -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">📋 General Information</span>
+        <span class="badge badge-blue" id="dayInfo">Checking day...</span>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Working Date (auto - skips weekends)</label>
+          <input type="text" id="workDate" readonly placeholder="Loading...">
+        </div>
+        <div class="form-group">
+          <label>Total Attendance Hours</label>
+          <input type="text" id="attendanceHours" value="9" placeholder="e.g. 9:30">
+        </div>
+        <div class="form-group">
+          <label>Total Productive Hours</label>
+          <input type="text" id="productiveHours" placeholder="e.g.  7">
+        </div>
+      </div>
+      <div class="form-row" style="margin-bottom:0;">
+        <div class="form-group">
+          <label>Department</label>
+          <input type="text" id="deptDisplay" readonly style="background:#eef2ff;cursor:default;">
+        </div>
+        <div class="form-group">
+          <label>Reporting Manager</label>
+          <input type="text" id="managerDisplay" readonly style="background:#eef2ff;cursor:default;">
+        </div>
+      </div>
+    </div>
+
+    <!-- Tasks -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">💼 Tasks / Tickets</span>
+        <button class="btn btn-outline btn-sm" onclick="addTask()">+ Add Task</button>
+      </div>
+      <div id="tasksContainer"></div>
+      <div style="text-align:center;padding:6px 0;">
+        <button class="btn btn-ghost btn-sm" onclick="addTask()">+ Add Another Task</button>
+      </div>
+    </div>
+
+    <!-- Meetings -->
+    <div class="card">
+      <div class="card-header" style="cursor:pointer;" onclick="toggleMeetings()">
+        <span class="card-title">📞 Meetings <span style="font-size:0.76rem;font-weight:500;color:var(--muted);">(optional)</span></span>
+        <button class="btn btn-ghost btn-sm" id="meetToggle">+ Add Meeting</button>
+      </div>
+      <div id="meetSection" style="display:none;">
+        <div id="meetContainer"></div>
+        <button class="btn btn-ghost btn-sm" onclick="addMeeting()" style="margin-top:8px;">+ Add Another</button>
+      </div>
+    </div>
+
+    <!-- Generate -->
+    <div class="generate-wrap">
+      <button class="btn btn-lg btn-generate" onclick="generateUpdate()" id="genBtn">
+        <span>🚀</span> Generate Work Update
+      </button>
+    </div>
+
+    <!-- ========== RESULTS ========== -->
+    <div class="results-section" id="resultsSection">
+      <div class="divider">✨ Generated Output</div>
+
+      <!-- Output Grid -->
+      <div class="output-grid">
+
+        <!-- Teams -->
+        <div class="card">
+          <div class="card-header" style="padding-bottom:10px;">
+            <span class="card-title">💬 Teams Message</span>
+            <button class="btn btn-outline btn-sm" onclick="copyTeams()">📋 Copy</button>
+          </div>
+          <div class="teams-box" id="teamsOutput"></div>
+        </div>
+
+        <!-- Email -->
+        <div class="card">
+          <div class="card-header" style="padding-bottom:10px;">
+            <span class="card-title">📧 Email Preview</span>
+            <span class="badge badge-green" id="subjectBadge">Preview</span>
+          </div>
+          <iframe class="email-frame" id="emailFrame" title="Email Preview"></iframe>
+        </div>
+
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="card">
+        <div class="action-bar">
+          <button class="btn btn-success btn-lg" onclick="approveAndSend()" id="sendBtn">
+            ✅ Approve &amp; Send Email
+          </button>
+          <button class="btn btn-primary" onclick="saveOnly()" id="saveBtn">
+            💾 Save Only
+          </button>
+          <button class="btn btn-outline" onclick="copyTeams()">
+            📋 Copy Teams Message
+          </button>
+        </div>
+        <div class="email-note" id="emailNote">📨 Loading email config...</div>
+      </div>
+    </div>
+
+  </div><!-- /formTab -->
+
+  <!-- ===================== HISTORY TAB ===================== -->
+  <div id="historyTab" style="display:none;">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">📅 Work Update History</span>
+        <button class="btn btn-outline btn-sm" onclick="loadHistory()">🔄 Refresh</button>
+      </div>
+      <div id="historyBody">
+        <div class="empty-state"><div class="empty-icon">📂</div><p>Loading history...</p></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="handleModalClick(event)">
+  <div class="modal-box">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title" id="modalTitle">Teams Message</span>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="btn btn-outline btn-sm" id="modalCopyBtn" onclick="copyModalContent()">📋 Copy</button>
+          <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+      </div>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── STATE ─────────────────────────────────────────────
+let currentTeams = '';
+let currentEmailHtml = '';
+let currentEmailSubject = '';
+let savedTickets = [];
+let taskSeq = 0;
+let meetSeq = 0;
+let meetVisible = false;
+
+// ─── INIT ───────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadDate();
+  await loadTickets();
+  await loadUserSettings();
+  checkDriveStatus();
+  addTask();
+});
+
+async function loadDate() {
+  try {
+    const r = await fetch('/api/date');
+    const d = await r.json();
+    document.getElementById('workDate').value = d.date;
+    document.getElementById('headerDate').textContent = '📅 ' + d.date;
+    const parts = d.date.split('/');
+    const dt = new Date(parseInt(parts[2]), parseInt(parts[1])-1, parseInt(parts[0]));
+    const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+    document.getElementById('dayInfo').textContent = days[dt.getDay()];
+  } catch(e) { showToast('error', 'Could not load date'); }
+}
+
+async function loadUserSettings() {
+  try {
+    const r = await fetch('/api/settings/get');
+    const d = await r.json();
+    if (d.success) {
+      const s = d.settings;
+      if (document.getElementById('deptDisplay'))
+        document.getElementById('deptDisplay').value = s.department || 'Production Team';
+      if (document.getElementById('managerDisplay'))
+        document.getElementById('managerDisplay').value = s.reporting_manager || '';
+      const note = document.getElementById('emailNote');
+      if (note) {
+        const cc = s.cc_emails || '';
+        note.innerHTML = `📨 <strong>To:</strong> ${s.to_email || '(not set)'} &nbsp;|&nbsp; <strong>CC:</strong> ${cc || '(not set)'}`;
+      }
+    }
+  } catch(e) {}
+}
+
+async function checkDriveStatus() {
+  try {
+    const r = await fetch('/api/drive/status');
+    const d = await r.json();
+    const badge = document.getElementById('driveStatusBadge');
+    if (badge) {
+      badge.style.display = 'inline';
+      if (d.connected) {
+        badge.textContent = '☁️ Drive ✓';
+        badge.style.background = 'rgba(16,185,129,0.3)';
+      } else {
+        badge.textContent = '☁️ Drive ✗';
+        badge.style.background = 'rgba(239,68,68,0.3)';
+        badge.title = d.error || 'Drive not connected';
+      }
+    }
+  } catch(e) {}
+}
+
+async function loadTickets() {
+  try {
+    const r = await fetch('/api/tickets');
+    const d = await r.json();
+    savedTickets = d.tickets || [];
+  } catch(e) {}
+}
+
+// ─── TAB SWITCH ─────────────────────────────────────────
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('formTab').style.display = tab === 'form' ? 'block' : 'none';
+  document.getElementById('historyTab').style.display = tab === 'history' ? 'block' : 'none';
+  if (tab === 'history') loadHistory();
+}
+
+// ─── TASK MANAGEMENT ────────────────────────────────────
+function addTask() {
+  taskSeq++;
+  const n = taskSeq;
+  const wrap = document.getElementById('tasksContainer');
+  const div = document.createElement('div');
+  div.className = 'task-card';
+  div.id = 'task-' + n;
+  div.innerHTML = `
+    <div class="task-top">
+      <span class="task-badge">Task ${n}</span>
+      ${n > 1 ? `<button class="btn-danger-ghost" onclick="removeTask(${n})">✕ Remove</button>` : ''}
+    </div>
+    <div class="form-row">
+      <div class="form-group ac-wrapper">
+        <label>Task / Ticket Name *</label>
+        <input type="text" id="tk-${n}" placeholder="e.g. JRR2206, AKV2008"
+               autocomplete="off"
+               oninput="showAC(${n}, this.value)"
+               onblur="hideAC(${n})">
+        <div class="ac-list" id="ac-${n}"></div>
+      </div>
+      <div class="form-group">
+        <label>Status *</label>
+        <select id="st-${n}">
+          <option value="In Progress">In Progress</option>
+          <option value="Completed">Completed</option>
+          <option value="Testing">Testing</option>
+          <option value="Under Review">Under Review</option>
+          <option value="On Hold">On Hold</option>
+          <option value="Not Started">Not Started</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Hours Spent *</label>
+        <input type="text" id="hr-${n}" placeholder="e.g. 3">
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:12px;">
+      <label>What I Did Today * &nbsp;<span style="font-weight:400;text-transform:none;letter-spacing:0;">(3-4 lines · AI will expand professionally)</span></label>
+      <textarea id="ds-${n}" placeholder="- Optimized n8n workflows for voice agent
+- Reviewed GHL settings and tested booking workflows
+- Improved Cal.com integration logic and refined AI prompts"
+        onkeydown="bulletTyping(event, this)"
+        onfocus="initBullet(this)"></textarea>
+    </div>
+    <div class="form-row" style="margin-bottom:0;">
+      <div class="form-group">
+        <label>Links (optional, comma-separated)</label>
+        <input type="text" id="lk-${n}" placeholder="https://app.example.com">
+      </div>
+      <div class="form-group">
+        <label>Additional Notes (optional)</label>
+        <input type="text" id="nt-${n}" placeholder="Any special note for manager">
+      </div>
+    </div>`;
+  wrap.appendChild(div);
+  div.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function removeTask(n) {
+  const el = document.getElementById('task-' + n);
+  if (el) el.remove();
+}
+
+// ─── BULLET TYPING ───────────────────────────────────────
+function initBullet(ta) {
+  if (ta.value.trim() === '') {
+    ta.value = '- ';
+    ta.selectionStart = ta.selectionEnd = 2;
+  }
+}
+
+function bulletTyping(e, ta) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const val   = ta.value;
+    const pos   = ta.selectionStart;
+    const lines = val.substring(0, pos).split('\n');
+    const cur   = lines[lines.length - 1];
+    if (cur.trim() === '-' || cur.trim() === '') {
+      // Empty bullet — remove it and stop
+      const newVal = val.substring(0, pos - cur.length) + val.substring(pos);
+      ta.value = newVal;
+      ta.selectionStart = ta.selectionEnd = pos - cur.length;
+    } else {
+      const insert = '\n- ';
+      ta.value = val.substring(0, pos) + insert + val.substring(pos);
+      ta.selectionStart = ta.selectionEnd = pos + insert.length;
+    }
+  }
+  if (e.key === 'Backspace') {
+    const val = ta.value;
+    const pos = ta.selectionStart;
+    const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
+    const lineContent = val.substring(lineStart, pos);
+    if (lineContent === '- ') {
+      e.preventDefault();
+      ta.value = val.substring(0, lineStart) + val.substring(pos);
+      ta.selectionStart = ta.selectionEnd = lineStart;
+    }
+  }
+}
+
+// ─── AUTOCOMPLETE ────────────────────────────────────────
+function showAC(n, val) {
+  const list = document.getElementById('ac-' + n);
+  if (!val || !savedTickets.length) { list.style.display = 'none'; return; }
+  const matches = savedTickets.filter(t => t.toLowerCase().includes(val.toLowerCase()));
+  if (!matches.length) { list.style.display = 'none'; return; }
+  list.innerHTML = matches.map(t =>
+    `<div class="ac-item" onmousedown="pickAC(${n},'${t}')">${t}</div>`
+  ).join('');
+  list.style.display = 'block';
+}
+function hideAC(n) { setTimeout(() => { const l = document.getElementById('ac-'+n); if(l) l.style.display='none'; }, 200); }
+function pickAC(n, val) {
+  const inp = document.getElementById('tk-'+n);
+  if(inp) inp.value = val;
+  const l = document.getElementById('ac-'+n);
+  if(l) l.style.display = 'none';
+}
+
+// ─── MEETINGS ────────────────────────────────────────────
+function toggleMeetings() {
+  meetVisible = !meetVisible;
+  document.getElementById('meetSection').style.display = meetVisible ? 'block' : 'none';
+  document.getElementById('meetToggle').textContent = meetVisible ? '▲ Collapse' : '+ Add Meeting';
+  if (meetVisible && document.getElementById('meetContainer').children.length === 0) addMeeting();
+}
+
+function addMeeting() {
+  meetSeq++;
+  const n = meetSeq;
+  const wrap = document.getElementById('meetContainer');
+  const div = document.createElement('div');
+  div.className = 'task-card';
+  div.id = 'meet-' + n;
+  div.style.marginBottom = '10px';
+  div.innerHTML = `
+    <div class="task-top" style="margin-bottom:10px;">
+      <span class="task-badge" style="background:#6366f1;">Meeting ${n}</span>
+      <button class="btn-danger-ghost" onclick="document.getElementById('meet-${n}').remove()">✕ Remove</button>
+    </div>
+    <div class="form-row" style="margin-bottom:0;">
+      <div class="form-group">
+        <label>Meeting Name</label>
+        <input type="text" id="mn-${n}" placeholder="Sprint Review">
+      </div>
+      <div class="form-group">
+        <label>Duration</label>
+        <input type="text" id="md-${n}" placeholder="30 min">
+      </div>
+      <div class="form-group">
+        <label>Purpose</label>
+        <input type="text" id="mp-${n}" placeholder="Project status update">
+      </div>
+    </div>`;
+  wrap.appendChild(div);
+}
+
+// ─── COLLECT FORM DATA ───────────────────────────────────
+function collectForm() {
+  const tasks = [];
+  document.querySelectorAll('[id^="task-"]').forEach(card => {
+    const n = card.id.replace('task-', '');
+    const ticket = (document.getElementById('tk-'+n)?.value || '').trim();
+    if (!ticket) return;
+    tasks.push({
+      ticket,
+      description: (document.getElementById('ds-'+n)?.value || '').trim(),
+      status: document.getElementById('st-'+n)?.value || 'In Progress',
+      hours: (document.getElementById('hr-'+n)?.value || '').trim() || 'N/A',
+      links: (document.getElementById('lk-'+n)?.value || '').trim(),
+      notes: (document.getElementById('nt-'+n)?.value || '').trim()
+    });
+  });
+
+  const meetings = [];
+  document.querySelectorAll('[id^="meet-"]').forEach(card => {
+    const n = card.id.replace('meet-', '');
+    const name = (document.getElementById('mn-'+n)?.value || '').trim();
+    if (!name) return;
+    meetings.push({
+      name,
+      duration: (document.getElementById('md-'+n)?.value || '').trim() || 'NA',
+      purpose: (document.getElementById('mp-'+n)?.value || '').trim() || 'NA'
+    });
+  });
+
+  return {
+    date: document.getElementById('workDate').value,
+    attendance_hours: (document.getElementById('attendanceHours').value || '').trim() || 'N/A',
+    productive_hours: (document.getElementById('productiveHours').value || '').trim() || 'N/A',
+    tasks,
+    meetings
+  };
+}
+
+// ─── GENERATE ────────────────────────────────────────────
+async function generateUpdate() {
+  const form = collectForm();
+  if (!form.tasks.length) {
+    showToast('error', 'Add at least one task with a ticket name!');
+    return;
+  }
+
+  setLoading(true);
+  const btn = document.getElementById('genBtn');
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(form)
+    });
+    const data = await res.json();
+
+    if (!data.success) {
+      showToast('error', data.error || 'Generation failed. Try again.');
+      return;
+    }
+
+    currentTeams = data.teams_message;
+    currentEmailHtml = data.email_html;
+    currentEmailSubject = data.email_subject;
+
+    // Teams output
+    document.getElementById('teamsOutput').textContent = currentTeams;
+
+    // Email iframe
+    const frame = document.getElementById('emailFrame');
+    const doc = frame.contentWindow.document;
+    doc.open();
+    doc.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+      <style>body{margin:0;padding:14px;font-family:Arial,sans-serif;}</style>
+      </head><body>${currentEmailHtml}</body></html>`);
+    doc.close();
+
+    document.getElementById('subjectBadge').textContent = currentEmailSubject;
+
+    const results = document.getElementById('resultsSection');
+    results.classList.add('visible');
+    setTimeout(() => results.scrollIntoView({ behavior: 'smooth' }), 100);
+
+    showToast('success', 'Update generated! Review below.');
+    await loadTickets();
+
+  } catch(e) {
+    showToast('error', 'Network error: ' + e.message);
+  } finally {
+    setLoading(false);
+    btn.disabled = false;
+  }
+}
+
+// ─── SAVE ONLY ───────────────────────────────────────────
+async function saveOnly() {
+  if (!currentTeams) { showToast('warning', 'Generate update first!'); return; }
+  try {
+    const res = await fetch('/api/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        form_data: collectForm(),
+        teams_message: currentTeams,
+        email_html: currentEmailHtml
+      })
+    });
+    const data = await res.json();
+    if (data.success) showToast('success', '💾 Saved to history!');
+    else showToast('error', data.error);
+  } catch(e) { showToast('error', e.message); }
+}
+
+// ─── APPROVE & SEND ──────────────────────────────────────
+async function approveAndSend() {
+  if (!currentTeams) { showToast('warning', 'Generate update first!'); return; }
+
+  const btn = document.getElementById('sendBtn');
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+
+  // Save first
+  try {
+    await fetch('/api/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        form_data: collectForm(),
+        teams_message: currentTeams,
+        email_html: currentEmailHtml
+      })
+    });
+  } catch(e) {}
+
+  // Send email
+  try {
+    const res = await fetch('/api/send_email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email_html: currentEmailHtml,
+        email_subject: currentEmailSubject
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      showToast('success', '✉️ Email sent to boss + CC!');
+    } else {
+      showToast('error', data.error);
+    }
+  } catch(e) {
+    showToast('error', e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '✅ Approve &amp; Send Email';
+  }
+}
+
+// ─── COPY TEAMS ──────────────────────────────────────────
+function copyTeams() {
+  if (!currentTeams) { showToast('warning', 'Generate update first!'); return; }
+  navigator.clipboard.writeText(currentTeams)
+    .then(() => showToast('success', '📋 Teams message copied to clipboard!'))
+    .catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = currentTeams;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('success', '📋 Copied!');
+    });
+}
+
+// ─── HISTORY ─────────────────────────────────────────────
+async function loadHistory() {
+  const body = document.getElementById('historyBody');
+  body.innerHTML = '<div class="empty-state"><div class="empty-icon">⏳</div><p>Loading...</p></div>';
+  try {
+    const res = await fetch('/api/history');
+    const data = await res.json();
+
+    if (!data.records || !data.records.length) {
+      body.innerHTML = '<div class="empty-state"><div class="empty-icon">📂</div><p>No history yet. Generate your first update!</p></div>';
+      return;
+    }
+
+    const rows = data.records.map(r => {
+      const chips = (r.tickets || []).map(t => `<span class="ticket-chip">${t}</span>`).join('');
+      return `<tr>
+        <td><strong>${r.display_date || r.date}</strong></td>
+        <td>${r.task_count || 0} task${(r.task_count||0)!==1?'s':''}</td>
+        <td>${chips || '<span style="color:var(--muted);">-</span>'}</td>
+        <td style="white-space:nowrap;">
+          <button class="btn btn-ghost btn-sm" onclick="viewTeams('${r.date}')" style="margin:2px;">👁 View</button>
+          <a href="/api/download/teams/${r.date}" class="btn btn-ghost btn-sm" style="margin:2px;text-decoration:none;">⬇ TXT</a>
+          <a href="/api/download/mail/${r.date}" class="btn btn-outline btn-sm" style="margin:2px;text-decoration:none;">⬇ DOCX</a>
+        </td>
+      </tr>`;
+    }).join('');
+
+    body.innerHTML = `<table class="history-table">
+      <thead><tr>
+        <th>Date</th><th>Tasks</th><th>Tickets</th><th>Actions</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  } catch(e) {
+    body.innerHTML = '<div class="empty-state"><div class="empty-icon">❌</div><p>Failed to load history</p></div>';
+  }
+}
+
+// ─── HISTORY MODAL ────────────────────────────────────────
+let modalContent = '';
+
+async function viewTeams(dateKey) {
+  try {
+    const res = await fetch('/api/history/' + dateKey);
+    const data = await res.json();
+    const content = data.teams_content || 'No content found.';
+    modalContent = content;
+    document.getElementById('modalTitle').textContent = 'Teams Message — ' + (data.record?.display_date || dateKey);
+    document.getElementById('modalBody').innerHTML =
+      `<div class="code-block">${escHtml(content)}</div>`;
+    document.getElementById('modalOverlay').style.display = 'block';
+  } catch(e) { showToast('error', 'Failed to load record'); }
+}
+
+function closeModal() { document.getElementById('modalOverlay').style.display = 'none'; }
+function handleModalClick(e) { if (e.target.id === 'modalOverlay') closeModal(); }
+function copyModalContent() {
+  navigator.clipboard.writeText(modalContent)
+    .then(() => showToast('success', '📋 Copied!'));
+}
+
+// ─── UTILITIES ───────────────────────────────────────────
+function escHtml(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function setLoading(show) {
+  document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
+}
+
+function showToast(type, msg) {
+  const wrap = document.getElementById('toastWrap');
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  const icons = { success:'✓', error:'✕', info:'ℹ', warning:'⚠' };
+  t.innerHTML = `<span class="toast-icon">${icons[type]||'•'}</span><span>${msg}</span>`;
+  wrap.appendChild(t);
+  setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity 0.3s'; setTimeout(()=>t.remove(),350); }, 4000);
+}
+</script>
+</body>
+</html>
