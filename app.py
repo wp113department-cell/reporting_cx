@@ -1051,18 +1051,34 @@ def api_send_email():
         full_html = f"""<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
 <body style="margin:0;padding:20px;font-family:Arial,sans-serif;">{email_html}</body></html>"""
 
-        msg = MIMEMultipart('alternative')
-        msg['Subject'] = email_subject
-        msg['From']    = gmail_user
-        msg['To']      = to_email
-        if cc_emails:
-            msg['Cc'] = ', '.join(cc_emails)
-        msg.attach(MIMEText(full_html, 'html'))
-
         all_recipients = [to_email] + cc_emails
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
-            server.login(gmail_user, gmail_pass)
-            server.sendmail(gmail_user, all_recipients, msg.as_string())
+
+        brevo_key = os.getenv('BREVO_API_KEY', '')
+        if brevo_key:
+            import urllib.request as _ureq
+            for recipient in all_recipients:
+                payload = json.dumps({
+                    'sender':      {'name': 'Daily Update App', 'email': gmail_user},
+                    'to':          [{'email': recipient}],
+                    'subject':     email_subject,
+                    'htmlContent': full_html
+                }).encode('utf-8')
+                req = _ureq.Request('https://api.brevo.com/v3/smtp/email', data=payload,
+                                     headers={'api-key': brevo_key,
+                                              'Content-Type': 'application/json'},
+                                     method='POST')
+                _ureq.urlopen(req, timeout=15)
+        else:
+            msg = MIMEMultipart('alternative')
+            msg['Subject'] = email_subject
+            msg['From']    = gmail_user
+            msg['To']      = to_email
+            if cc_emails:
+                msg['Cc'] = ', '.join(cc_emails)
+            msg.attach(MIMEText(full_html, 'html'))
+            with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+                server.login(gmail_user, gmail_pass)
+                server.sendmail(gmail_user, all_recipients, msg.as_string())
 
         return jsonify({'success': True, 'message': 'Email sent!'})
     except smtplib.SMTPAuthenticationError:
