@@ -4,6 +4,7 @@ import json
 import random
 import secrets
 import smtplib
+import threading
 from datetime import datetime, date, timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -150,7 +151,7 @@ def startup_sync():
     global _startup_synced
     if not _startup_synced:
         _startup_synced = True
-        sync_db_from_drive()
+        threading.Thread(target=sync_db_from_drive, daemon=True).start()
 
 
 # ─── APPROVAL HELPERS ────────────────────────────────────────────────────────
@@ -717,8 +718,8 @@ def api_send_otp():
     if not email or '@' not in email:
         return jsonify({'success': False, 'error': 'Invalid email'}), 400
 
-    # Sync from Drive to pick up any user deletions the admin made
-    sync_db_from_drive()
+    # Sync from Drive in background (picks up deletions without blocking login)
+    threading.Thread(target=sync_db_from_drive, daemon=True).start()
 
     otp = generate_otp(email)
 
