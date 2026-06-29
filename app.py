@@ -707,6 +707,8 @@ def pending_page():
 
 @app.route('/approve/<token>')
 def approve_user(token):
+    # Always sync from Drive first — DB may be empty after Railway restart
+    sync_db_from_drive()
     U = Query()
     found = users_table.search(U.approval_token == token)
     if not found:
@@ -782,6 +784,8 @@ def api_verify_otp():
     data  = request.json or {}
     email = data.get('email', '').strip().lower()
     otp   = data.get('otp', '').strip()
+    # Sync from Drive to ensure latest user state (handles Railway restart)
+    sync_db_from_drive()
 
     if not verify_otp(email, otp):
         return jsonify({'success': False, 'error': 'Invalid or expired OTP'}), 400
