@@ -166,6 +166,22 @@ def is_user_approved(email):
     return get_user_status(email) == 'approved'
 
 def _send_raw_email(from_user, from_pass, to_email, subject, html_body):
+    resend_key = os.getenv('RESEND_API_KEY', '')
+    if resend_key:
+        import urllib.request as _ureq
+        payload = json.dumps({
+            'from': 'Daily Update App <onboarding@resend.dev>',
+            'to': [to_email],
+            'subject': subject,
+            'html': html_body
+        }).encode('utf-8')
+        req = _ureq.Request('https://api.resend.com/emails', data=payload,
+                             headers={'Authorization': f'Bearer {resend_key}',
+                                      'Content-Type': 'application/json'},
+                             method='POST')
+        _ureq.urlopen(req, timeout=15)
+        return
+    # Fallback: Gmail SMTP (local development only)
     msg = MIMEMultipart('alternative')
     msg['Subject'] = subject
     msg['From']    = from_user
@@ -745,9 +761,7 @@ def api_send_otp():
         gmail_pass = os.getenv('ADMIN_GMAIL_PASS', '')
 
     sent_email = False
-    if gmail_user and gmail_pass:
-        try:
-            otp_html = f"""
+    otp_html = f"""
 <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;">
   <h2 style="color:#4f46e5;margin-bottom:4px;">🔐 Your Login OTP</h2>
   <p style="color:#64748b;margin-bottom:20px;">Daily Update Generator</p>
@@ -756,17 +770,12 @@ def api_send_otp():
   </div>
   <p style="color:#64748b;font-size:13px;">This OTP expires in <strong>5 minutes</strong>. Do not share it with anyone.</p>
 </div>"""
-            otp_msg = MIMEMultipart('alternative')
-            otp_msg['Subject'] = 'Your OTP — Daily Update App'
-            otp_msg['From']    = gmail_user
-            otp_msg['To']      = email
-            otp_msg.attach(MIMEText(otp_html, 'html'))
-            with smtplib.SMTP_SSL('smtp.gmail.com', 465) as sv:
-                sv.login(gmail_user, gmail_pass)
-                sv.sendmail(gmail_user, [email], otp_msg.as_string())
-            sent_email = True
-        except Exception as e:
-            print(f"⚠️  OTP email failed: {e}")
+    try:
+        _send_raw_email(gmail_user, gmail_pass, email,
+                        'Your OTP — Daily Update App', otp_html)
+        sent_email = True
+    except Exception as e:
+        print(f"⚠️  OTP email failed: {e}")
 
     msg = 'OTP sent to your email!' if sent_email else 'OTP printed in server terminal (check the terminal window).'
     return jsonify({'success': True, 'message': msg})
