@@ -738,6 +738,10 @@ def api_send_otp():
         admin_s    = get_user_settings(ADMIN_EMAIL)
         gmail_user = admin_s.get('gmail_user', '')
         gmail_pass = admin_s.get('gmail_app_password', '')
+    # Final fallback: env vars (needed on fresh Render/Vercel where DB is empty)
+    if not (gmail_user and gmail_pass):
+        gmail_user = os.getenv('ADMIN_GMAIL_USER', '')
+        gmail_pass = os.getenv('ADMIN_GMAIL_PASS', '')
 
     sent_email = False
     if gmail_user and gmail_pass:
