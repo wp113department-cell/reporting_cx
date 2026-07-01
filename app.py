@@ -42,7 +42,8 @@ records_table  = db.table('records')
 tickets_table  = db.table('tickets')
 
 ADMIN_EMAIL       = 'wp113.department@gmail.com'
-DRIVE_SCOPES      = ['https://www.googleapis.com/auth/drive.file']
+DRIVE_SCOPES      = ['https://www.googleapis.com/auth/drive.file',
+                     'https://www.googleapis.com/auth/gmail.send']
 DRIVE_FOLDER_NAME = 'Daily Work Updates'
 DB_SYNC_FOLDER    = 'reporting_users'
 
@@ -164,18 +165,38 @@ def is_user_approved(email):
         return True
     return get_user_status(email) == 'approved'
 
-def _send_raw_email(from_user, from_pass, to_email, subject, html_body, cc_emails=None):
-    msg = MIMEMultipart('alternative')
+def send_via_gmail_api(sender_email, to_emails, subject, html_body):
+    import base64
+    svc   = get_user_drive_service(sender_email)
+    creds = svc._http.credentials
+    gmail = build('gmail', 'v1', credentials=creds)
+    msg   = MIMEMultipart('alternative')
     msg['Subject'] = subject
-    msg['From']    = from_user
-    msg['To']      = to_email
-    if cc_emails:
-        msg['Cc'] = ', '.join(cc_emails)
+    msg['To']      = to_emails[0] if to_emails else ''
+    if len(to_emails) > 1:
+        msg['Cc'] = ', '.join(to_emails[1:])
     msg.attach(MIMEText(html_body, 'html'))
+    raw = base64.urlsafe_b64encode(msg.as_bytes()).decode()
+    gmail.users().messages().send(userId='me', body={'raw': raw}).execute()
+
+def _send_raw_email(from_user, from_pass, to_email, subject, html_body, cc_emails=None):
     all_rcpt = [to_email] + (cc_emails or [])
-    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as sv:
-        sv.login(from_user, from_pass)
-        sv.sendmail(from_user, all_rcpt, msg.as_string())
+    try:
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From']    = from_user
+        msg['To']      = to_email
+        if cc_emails:
+            msg['Cc'] = ', '.join(cc_emails)
+        msg.attach(MIMEText(html_body, 'html'))
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as sv:
+            sv.login(from_user, from_pass)
+            sv.sendmail(from_user, all_rcpt, msg.as_string())
+    except OSError as e:
+        if e.errno == 101:  # SMTP blocked on Railway — use Gmail API via admin Drive
+            send_via_gmail_api(ADMIN_EMAIL, all_rcpt, subject, html_body)
+        else:
+            raise
 
 def send_approval_request(new_user_email, approval_url):
     s         = get_user_settings(ADMIN_EMAIL)
@@ -875,6 +896,12 @@ def api_validate_gmail():
         return jsonify({'valid': True, 'message': 'Gmail connection successful!'})
     except smtplib.SMTPAuthenticationError:
         return jsonify({'valid': False, 'error': 'Authentication failed. Check your Gmail address and App Password.'})
+    except OSError as e:
+        if e.errno == 101:
+            # SMTP port blocked on this server — credentials are saved.
+            # Emails will be sent via Gmail API using your Google Drive connection.
+            return jsonify({'valid': True, 'message': '✅ Credentials saved! Emails will be sent via your Google Drive connection (SMTP not available on this server).'})
+        return jsonify({'valid': False, 'error': str(e)})
     except Exception as e:
         return jsonify({'valid': False, 'error': str(e)})
 
@@ -1039,9 +1066,22 @@ def api_send_email():
         full_html = f"""<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
 <body style="margin:0;padding:20px;font-family:Arial,sans-serif;">{email_html}</body></html>"""
 
-        _send_raw_email(gmail_user, gmail_pass, to_email,
-                        email_subject, full_html, cc_emails=cc_emails)
-        return jsonify({'success': True, 'message': 'Email sent successfully! Check your Gmail Sent folder.'})
+        all_recipients = [to_email] + cc_emails
+        try:
+            # Gmail API — works on Railway, email appears in user's Sent folder
+            send_via_gmail_api(email, all_recipients, email_subject, full_html)
+            return jsonify({'success': True, 'message': 'Email sent! Check your Gmail Sent folder.'})
+        except Exception as api_err:
+            err = str(api_err)
+            if 'scope' in err.lower() or 'insufficient' in err.lower() or 'gmail.send' in err:
+                return jsonify({'success': False,
+                                'error': 'Please reconnect Google Drive in Settings to enable email sending (new permission needed).'}), 403
+            if not (gmail_user and gmail_pass):
+                return jsonify({'success': False, 'error': f'Email sending failed: {err}'}), 500
+            # Fall back to SMTP (works on local dev)
+            _send_raw_email(gmail_user, gmail_pass, to_email,
+                            email_subject, full_html, cc_emails=cc_emails)
+            return jsonify({'success': True, 'message': 'Email sent! Check your Gmail Sent folder.'})
     except smtplib.SMTPAuthenticationError:
         return jsonify({'success': False,
                         'error': 'Gmail authentication failed. Please update your App Password in Settings.'}), 400
