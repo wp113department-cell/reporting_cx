@@ -167,8 +167,15 @@ def is_user_approved(email):
 
 def send_via_gmail_api(sender_email, to_emails, subject, html_body):
     import base64
-    svc   = get_user_drive_service(sender_email)
-    creds = svc._http.credentials
+    S = Query()
+    found = settings_table.search(S.email == sender_email)
+    if not found or not found[0].get('drive_token_json'):
+        raise Exception("Drive not connected. Go to Settings → Connect Google Drive.")
+    creds = Credentials.from_authorized_user_info(
+        json.loads(found[0]['drive_token_json']), DRIVE_SCOPES)
+    if not creds.valid and creds.expired and creds.refresh_token:
+        creds.refresh(Request())
+        settings_table.update({'drive_token_json': creds.to_json()}, S.email == sender_email)
     gmail = build('gmail', 'v1', credentials=creds)
     msg   = MIMEMultipart('alternative')
     msg['Subject'] = subject
