@@ -42,7 +42,8 @@ records_table  = db.table('records')
 tickets_table  = db.table('tickets')
 
 ADMIN_EMAIL       = 'wp113.department@gmail.com'
-DRIVE_SCOPES      = ['https://www.googleapis.com/auth/drive.file']
+DRIVE_SCOPES      = ['https://www.googleapis.com/auth/drive.file',
+                     'https://www.googleapis.com/auth/gmail.send']
 DRIVE_FOLDER_NAME = 'Daily Work Updates'
 DB_SYNC_FOLDER    = 'reporting_users'
 
@@ -351,6 +352,19 @@ def upload_to_drive(service, folder_id, filename, content_bytes, mime_type):
         ).execute()['id']
     return file_id
 
+def send_via_gmail_api(user_email, to_emails, subject, html_body):
+    import base64
+    creds = get_user_drive_service(user_email)._http.credentials
+    service = build('gmail', 'v1', credentials=creds)
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = subject
+    msg['To']      = to_emails[0] if to_emails else ''
+    if len(to_emails) > 1:
+        msg['Cc'] = ', '.join(to_emails[1:])
+    msg.attach(MIMEText(html_body, 'html'))
+    raw = base64.urlsafe_b64encode(msg.as_bytes()).decode()
+    service.users().messages().send(userId='me', body={'raw': raw}).execute()
+
 def save_to_drive(email, date_key, work_date, form_data, teams_message):
     service    = get_user_drive_service(email)
     root_id    = get_or_create_folder(service, DRIVE_FOLDER_NAME)
@@ -582,7 +596,7 @@ CRITICAL: There are {num_tasks} task(s) above. You MUST return EXACTLY {num_task
 Return JSON with EXACTLY these fields (no markdown, no extra text):
 
 {{
-  "teams_message": "Complete Teams plain-text message covering ALL {num_tasks} tasks",
+  "teams_messages": ["separate Teams message for task 1", "separate Teams message for task 2"],
   "email_subject": "ATTENDANCE: {work_date}",
   "task_summaries": [
     {{
@@ -615,32 +629,43 @@ Return JSON with EXACTLY these fields (no markdown, no extra text):
   "meetings": [{{"name":"NA","duration":"NA","purpose":"NA"}}]
 }}
 
-TEAMS MESSAGE FORMAT (include ALL tasks, one section per task):
+teams_messages MUST be an array of {num_tasks} strings — one complete Teams message per task.
+
+EACH teams_messages[i] FORMAT (for task i):
 Work Update
 
 Date: {work_date}
 
-Project/Client Name - [TICKET 1]
+Project/Client Name - [TICKET NAME]
+
+    ** Worked on [TICKET NAME]: [Status]
 
     - [expanded point 1]
     - [expanded point 2]
     - [expanded point 3]
     - [expanded point 4]
+    - [expanded point 5]
+    - [expanded point 6]
 
-Actual Hours: [hours] Hours
+Actual Hours:
+    - [X] Hours
 
-Project/Client Name - [TICKET 2]
+Note:
+    - [additional notes or leave empty with just -]
 
-    - [expanded point 1]
-    - [expanded point 2]
+Questions:
+    -
 
-Actual Hours: [hours] Hours
+Links:
+    - [links if provided, else leave as -]
 
-(repeat for every task)
+Tomorrow's Task:
+    - Continue with the further tasks.
 
 RULES:
+- teams_messages MUST have {num_tasks} items — one complete message per task, never combine tasks
 - task_summaries MUST have {num_tasks} items — one per task, no exceptions
-- Expand each task's brief description to 4-6 professional bullet points
+- Expand each task description to 4-6 professional bullet points
 - commits: 4-6 past-tense technical actions per task
 - modules: 3-5 specific features worked on per task
 - qa_testing: 3-4 specific tests done per task
@@ -967,11 +992,17 @@ def api_generate():
             if name and not tickets_table.search((T.name == name) & (T.user == email)):
                 tickets_table.insert({'name': name, 'user': email})
 
+        teams_msgs = llm_result.get('teams_messages', [])
+        # Fallback: if LLM returned old single string format
+        if not teams_msgs:
+            single = llm_result.get('teams_message', '')
+            teams_msgs = [single] if single else []
         return jsonify({
-            'success':       True,
-            'teams_message': llm_result.get('teams_message', ''),
-            'email_html':    email_html,
-            'email_subject': llm_result.get('email_subject', f"ATTENDANCE: {work_date}")
+            'success':        True,
+            'teams_messages': teams_msgs,
+            'teams_message':  '\n\n---\n\n'.join(teams_msgs),
+            'email_html':     email_html,
+            'email_subject':  llm_result.get('email_subject', f"ATTENDANCE: {work_date}")
         })
     except json.JSONDecodeError as e:
         return jsonify({'success': False, 'error': f'LLM returned invalid JSON. Try again. ({e})'}), 500
@@ -1039,39 +1070,15 @@ def api_send_email():
 <body style="margin:0;padding:20px;font-family:Arial,sans-serif;">{email_html}</body></html>"""
 
         all_recipients = [to_email] + cc_emails
-
-        brevo_key = os.getenv('BREVO_API_KEY', '')
-        if brevo_key:
-            import urllib.request as _ureq
-            for recipient in all_recipients:
-                payload = json.dumps({
-                    'sender':      {'name': 'Daily Update App', 'email': gmail_user},
-                    'to':          [{'email': recipient}],
-                    'subject':     email_subject,
-                    'htmlContent': full_html
-                }).encode('utf-8')
-                req = _ureq.Request('https://api.brevo.com/v3/smtp/email', data=payload,
-                                     headers={'api-key': brevo_key,
-                                              'Content-Type': 'application/json'},
-                                     method='POST')
-                _ureq.urlopen(req, timeout=15)
-        else:
-            msg = MIMEMultipart('alternative')
-            msg['Subject'] = email_subject
-            msg['From']    = gmail_user
-            msg['To']      = to_email
-            if cc_emails:
-                msg['Cc'] = ', '.join(cc_emails)
-            msg.attach(MIMEText(full_html, 'html'))
-            with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
-                server.login(gmail_user, gmail_pass)
-                server.sendmail(gmail_user, all_recipients, msg.as_string())
-
-        return jsonify({'success': True, 'message': 'Email sent!'})
-    except smtplib.SMTPAuthenticationError:
-        return jsonify({'success': False, 'error': 'Gmail auth failed. Check your App Password in Settings.'}), 401
+        # Use Gmail API — sends from user's real Gmail, appears in Sent folder
+        send_via_gmail_api(email, all_recipients, email_subject, full_html)
+        return jsonify({'success': True, 'message': 'Email sent! Check your Gmail Sent folder.'})
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+        err = str(e)
+        if 'gmail.send' in err or 'insufficient' in err.lower() or 'scope' in err.lower():
+            return jsonify({'success': False,
+                            'error': 'Please reconnect Google Drive in Setup to enable email sending (new permission needed).'}), 403
+        return jsonify({'success': False, 'error': err}), 500
 
 @app.route('/api/history')
 @login_required_api

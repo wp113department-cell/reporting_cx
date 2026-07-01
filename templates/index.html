@@ -576,12 +576,14 @@ body {
       <div class="output-grid">
 
         <!-- Teams -->
-        <div class="card">
-          <div class="card-header" style="padding-bottom:10px;">
-            <span class="card-title">💬 Teams Message</span>
-            <button class="btn btn-outline btn-sm" onclick="copyTeams()">📋 Copy</button>
+        <div id="teamsSection">
+          <div class="card">
+            <div class="card-header" style="padding-bottom:6px;">
+              <span class="card-title">💬 Teams Messages</span>
+              <button class="btn btn-outline btn-sm" onclick="copyTeams()">📋 Copy All</button>
+            </div>
+            <div id="teamsMessagesContainer"></div>
           </div>
-          <div class="teams-box" id="teamsOutput"></div>
         </div>
 
         <!-- Email -->
@@ -1018,8 +1020,17 @@ async function generateUpdate() {
     currentEmailHtml = data.email_html;
     currentEmailSubject = data.email_subject;
 
-    // Teams output
-    document.getElementById('teamsOutput').textContent = currentTeams;
+    // Render separate Teams message box per project
+    const teamsArr = data.teams_messages || [currentTeams];
+    const container = document.getElementById('teamsMessagesContainer');
+    container.innerHTML = teamsArr.map((msg, i) => `
+      <div style="border-top:1px solid #e2e8f0;padding:14px 0 4px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span style="font-size:0.78rem;font-weight:700;color:#7c3aed;">Project ${i+1}</span>
+          <button class="btn btn-outline btn-sm" onclick="copySingleTeams(${i})">📋 Copy</button>
+        </div>
+        <div class="teams-box" id="teamsMsg-${i}">${msg}</div>
+      </div>`).join('');
 
     // Email iframe
     const frame = document.getElementById('emailFrame');
@@ -1112,10 +1123,29 @@ async function approveAndSend() {
 }
 
 // ─── COPY TEAMS ──────────────────────────────────────────
+let _teamsMessages = [];
+
+function copySingleTeams(i) {
+  const el = document.getElementById('teamsMsg-' + i);
+  const txt = el ? el.textContent : '';
+  if (!txt) return;
+  navigator.clipboard.writeText(txt)
+    .then(() => showToast('success', '📋 Project ' + (i+1) + ' copied!'))
+    .catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = txt;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('success', '📋 Copied!');
+    });
+}
+
 function copyTeams() {
   if (!currentTeams) { showToast('warning', 'Generate update first!'); return; }
   navigator.clipboard.writeText(currentTeams)
-    .then(() => showToast('success', '📋 Teams message copied to clipboard!'))
+    .then(() => showToast('success', '📋 All Teams messages copied!'))
     .catch(() => {
       const ta = document.createElement('textarea');
       ta.value = currentTeams;
