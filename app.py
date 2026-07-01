@@ -885,6 +885,25 @@ def api_settings_get():
     return jsonify({'success': True, 'settings': safe, 'drive_connected': has_drive})
 
 
+@app.route('/api/debug/token')
+@login_required_api
+def api_debug_token():
+    email = get_current_user()
+    S = Query()
+    found = settings_table.search(S.email == email)
+    if not found or not found[0].get('drive_token_json'):
+        return jsonify({'error': 'No token'})
+    token_data = json.loads(found[0]['drive_token_json'])
+    creds = Credentials.from_authorized_user_info(token_data, DRIVE_SCOPES)
+    return jsonify({
+        'stored_scopes': token_data.get('scopes'),
+        'creds_scopes':  list(creds.scopes) if creds.scopes else None,
+        'token_exists':  bool(token_data.get('token')),
+        'creds_valid':   creds.valid,
+        'creds_expired': creds.expired,
+        'has_refresh':   bool(creds.refresh_token),
+    })
+
 # ─── DRIVE AUTH ──────────────────────────────────────────────────────────────
 @app.route('/api/drive/status')
 @login_required_api
@@ -1105,11 +1124,9 @@ def api_send_email():
             send_via_gmail_api(email, all_recipients, email_subject, full_html)
             return jsonify({'success': True, 'message': 'Email sent! Check your Gmail Sent folder.'})
         except Exception as api_err:
+            print(f"⚠️  Gmail API error for {email}: {api_err}")
             err = str(api_err)
-            if 'insufficient' in err.lower() or 'scope' in err.lower() or '403' in err:
-                return jsonify({'success': False,
-                                'error': 'Please reconnect Google Drive in Settings → Connect Google Drive (new email permission needed).'}), 403
-            # Gmail API failed — try SMTP fallback (works on local dev)
+            # Try SMTP fallback (works on local dev, fails on Railway — reported to user)
             try:
                 _send_raw_email(gmail_user, gmail_pass, to_email,
                                 email_subject, full_html, cc_emails=cc_emails)
