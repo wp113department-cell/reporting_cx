@@ -181,22 +181,35 @@ def send_via_gmail_api(sender_email, to_emails, subject, html_body):
 
 def _send_raw_email(from_user, from_pass, to_email, subject, html_body, cc_emails=None):
     all_rcpt = [to_email] + (cc_emails or [])
+    last_err = None
+
+    # Try Gmail API first (works on Railway via HTTPS, appears in Sent folder)
     try:
-        msg = MIMEMultipart('alternative')
-        msg['Subject'] = subject
-        msg['From']    = from_user
-        msg['To']      = to_email
-        if cc_emails:
-            msg['Cc'] = ', '.join(cc_emails)
-        msg.attach(MIMEText(html_body, 'html'))
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as sv:
-            sv.login(from_user, from_pass)
-            sv.sendmail(from_user, all_rcpt, msg.as_string())
-    except OSError as e:
-        if e.errno == 101:  # SMTP blocked on Railway — use Gmail API via admin Drive
-            send_via_gmail_api(ADMIN_EMAIL, all_rcpt, subject, html_body)
-        else:
-            raise
+        send_via_gmail_api(ADMIN_EMAIL, all_rcpt, subject, html_body)
+        return  # success
+    except Exception as e:
+        last_err = e  # Drive not connected or scope missing — try SMTP next
+
+    # Try SMTP port 587 STARTTLS (less restricted than 465 SSL on cloud servers)
+    if from_user and from_pass:
+        try:
+            msg = MIMEMultipart('alternative')
+            msg['Subject'] = subject
+            msg['From']    = from_user
+            msg['To']      = to_email
+            if cc_emails:
+                msg['Cc'] = ', '.join(cc_emails)
+            msg.attach(MIMEText(html_body, 'html'))
+            with smtplib.SMTP('smtp.gmail.com', 587, timeout=8) as sv:
+                sv.ehlo()
+                sv.starttls()
+                sv.login(from_user, from_pass)
+                sv.sendmail(from_user, all_rcpt, msg.as_string())
+            return  # success
+        except Exception as e:
+            last_err = e
+
+    raise last_err or Exception('No email credentials available')
 
 def send_approval_request(new_user_email, approval_url):
     s         = get_user_settings(ADMIN_EMAIL)
@@ -752,8 +765,8 @@ def api_send_otp():
     if not email or '@' not in email:
         return jsonify({'success': False, 'error': 'Invalid email'}), 400
 
-    # Sync from Drive in background (picks up deletions without blocking login)
-    threading.Thread(target=sync_db_from_drive, daemon=True).start()
+    # Sync from Drive so admin settings (Gmail creds/Drive token) are available for OTP email
+    sync_db_from_drive()
 
     otp = generate_otp(email)
 
