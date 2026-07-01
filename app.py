@@ -166,25 +166,41 @@ def is_user_approved(email):
     return get_user_status(email) == 'approved'
 
 def send_via_gmail_api(sender_email, to_emails, subject, html_body):
-    import base64
+    """Send email via Gmail API using raw urllib — no discovery doc download needed."""
+    import base64, urllib.request as _req, urllib.error
     S = Query()
     found = settings_table.search(S.email == sender_email)
     if not found or not found[0].get('drive_token_json'):
         raise Exception("Drive not connected. Go to Settings → Connect Google Drive.")
     creds = Credentials.from_authorized_user_info(
         json.loads(found[0]['drive_token_json']), DRIVE_SCOPES)
-    if not creds.valid and creds.expired and creds.refresh_token:
-        creds.refresh(Request())
-        settings_table.update({'drive_token_json': creds.to_json()}, S.email == sender_email)
-    gmail = build('gmail', 'v1', credentials=creds)
-    msg   = MIMEMultipart('alternative')
+    if not creds.valid:
+        if creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+            settings_table.update({'drive_token_json': creds.to_json()}, S.email == sender_email)
+        else:
+            raise Exception("Drive session expired. Please reconnect in Settings.")
+    msg = MIMEMultipart('alternative')
     msg['Subject'] = subject
+    msg['From']    = sender_email
     msg['To']      = to_emails[0] if to_emails else ''
     if len(to_emails) > 1:
         msg['Cc'] = ', '.join(to_emails[1:])
     msg.attach(MIMEText(html_body, 'html'))
     raw = base64.urlsafe_b64encode(msg.as_bytes()).decode()
-    gmail.users().messages().send(userId='me', body={'raw': raw}).execute()
+    payload = json.dumps({'raw': raw}).encode('utf-8')
+    req = _req.Request(
+        'https://gmail.googleapis.com/gmail/v1/users/me/messages/send',
+        data=payload,
+        headers={'Authorization': f'Bearer {creds.token}',
+                 'Content-Type': 'application/json'},
+        method='POST'
+    )
+    try:
+        _req.urlopen(req, timeout=15)
+    except urllib.error.HTTPError as e:
+        body = e.read().decode('utf-8', errors='replace')
+        raise Exception(f"Gmail API {e.code}: {body}")
 
 def _send_raw_email(from_user, from_pass, to_email, subject, html_body, cc_emails=None):
     all_rcpt = [to_email] + (cc_emails or [])
@@ -1086,23 +1102,20 @@ def api_send_email():
 
         all_recipients = [to_email] + cc_emails
         try:
-            # Gmail API — works on Railway, email appears in user's Sent folder
             send_via_gmail_api(email, all_recipients, email_subject, full_html)
             return jsonify({'success': True, 'message': 'Email sent! Check your Gmail Sent folder.'})
         except Exception as api_err:
             err = str(api_err)
-            if 'scope' in err.lower() or 'insufficient' in err.lower() or 'gmail.send' in err:
+            if 'insufficient' in err.lower() or 'scope' in err.lower() or '403' in err:
                 return jsonify({'success': False,
-                                'error': 'Please reconnect Google Drive in Settings to enable email sending (new permission needed).'}), 403
-            if not (gmail_user and gmail_pass):
-                return jsonify({'success': False, 'error': f'Email sending failed: {err}'}), 500
-            # Fall back to SMTP (works on local dev)
-            _send_raw_email(gmail_user, gmail_pass, to_email,
-                            email_subject, full_html, cc_emails=cc_emails)
-            return jsonify({'success': True, 'message': 'Email sent! Check your Gmail Sent folder.'})
-    except smtplib.SMTPAuthenticationError:
-        return jsonify({'success': False,
-                        'error': 'Gmail authentication failed. Please update your App Password in Settings.'}), 400
+                                'error': 'Please reconnect Google Drive in Settings → Connect Google Drive (new email permission needed).'}), 403
+            # Gmail API failed — try SMTP fallback (works on local dev)
+            try:
+                _send_raw_email(gmail_user, gmail_pass, to_email,
+                                email_subject, full_html, cc_emails=cc_emails)
+                return jsonify({'success': True, 'message': 'Email sent!'})
+            except Exception:
+                return jsonify({'success': False, 'error': f'Email failed: {err}'}), 500
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
