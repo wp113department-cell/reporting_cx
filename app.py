@@ -765,51 +765,49 @@ def api_send_otp():
     if not email or '@' not in email:
         return jsonify({'success': False, 'error': 'Invalid email'}), 400
 
-    # Sync from Drive so admin settings (Gmail creds/Drive token) are available for OTP email
-    sync_db_from_drive()
+    otp = generate_otp(email)  # generates instantly and prints to terminal logs
 
-    otp = generate_otp(email)
-
-    # Register user if first time
+    # Register user if first time (local write only, sync in background)
     U = Query()
     if not users_table.search(U.email == email):
         initial_status = 'approved' if email == ADMIN_EMAIL else 'unknown'
         users_table.insert({'email': email, 'created_at': datetime.now().isoformat(),
                             'status': initial_status})
-        sync_db_to_drive()  # push new user to Drive immediately
+        threading.Thread(target=sync_db_to_drive, daemon=True).start()
 
-    # Send OTP via email — use user's own Gmail if configured, else fall back to admin's Gmail
-    s          = get_user_settings(email)
-    gmail_user = s.get('gmail_user', '') or ''
-    gmail_pass = s.get('gmail_app_password', '') or ''
-    if not (gmail_user and gmail_pass):
-        admin_s    = get_user_settings(ADMIN_EMAIL)
-        gmail_user = admin_s.get('gmail_user', '')
-        gmail_pass = admin_s.get('gmail_app_password', '')
-    # Final fallback: env vars (needed on fresh Render/Vercel where DB is empty)
-    if not (gmail_user and gmail_pass):
-        gmail_user = os.getenv('ADMIN_GMAIL_USER', '')
-        gmail_pass = os.getenv('ADMIN_GMAIL_PASS', '')
-
-    sent_email = False
+    # Send OTP email in background — response returns immediately so UI never hangs
     otp_html = f"""
 <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;">
-  <h2 style="color:#4f46e5;margin-bottom:4px;">🔐 Your Login OTP</h2>
+  <h2 style="color:#4f46e5;margin-bottom:4px;">&#128272; Your Login OTP</h2>
   <p style="color:#64748b;margin-bottom:20px;">Daily Update Generator</p>
   <div style="background:#f1f5f9;border-radius:12px;padding:24px;text-align:center;margin-bottom:20px;">
     <div style="font-size:36px;font-weight:900;letter-spacing:10px;color:#1e293b;">{otp}</div>
   </div>
   <p style="color:#64748b;font-size:13px;">This OTP expires in <strong>5 minutes</strong>. Do not share it with anyone.</p>
 </div>"""
-    try:
-        _send_raw_email(gmail_user, gmail_pass, email,
-                        'Your OTP — Daily Update App', otp_html)
-        sent_email = True
-    except Exception as e:
-        print(f"⚠️  OTP email failed: {e}")
 
-    msg = 'OTP sent to your email!' if sent_email else 'OTP printed in server terminal (check the terminal window).'
-    return jsonify({'success': True, 'message': msg})
+    def _send_in_background():
+        sync_db_from_drive()
+        s          = get_user_settings(email)
+        gmail_user = s.get('gmail_user', '') or ''
+        gmail_pass = s.get('gmail_app_password', '') or ''
+        if not (gmail_user and gmail_pass):
+            admin_s    = get_user_settings(ADMIN_EMAIL)
+            gmail_user = admin_s.get('gmail_user', '')
+            gmail_pass = admin_s.get('gmail_app_password', '')
+        if not (gmail_user and gmail_pass):
+            gmail_user = os.getenv('ADMIN_GMAIL_USER', '')
+            gmail_pass = os.getenv('ADMIN_GMAIL_PASS', '')
+        try:
+            _send_raw_email(gmail_user, gmail_pass, email,
+                            'Your OTP — Daily Update App', otp_html)
+            print(f"✅ OTP email delivered to {email}")
+        except Exception as e:
+            print(f"⚠️  OTP email failed: {e}")
+
+    threading.Thread(target=_send_in_background, daemon=True).start()
+
+    return jsonify({'success': True, 'message': 'OTP sent to your email!'})
 
 @app.route('/api/auth/verify-otp', methods=['POST'])
 def api_verify_otp():
