@@ -42,8 +42,7 @@ records_table  = db.table('records')
 tickets_table  = db.table('tickets')
 
 ADMIN_EMAIL       = 'wp113.department@gmail.com'
-DRIVE_SCOPES      = ['https://www.googleapis.com/auth/drive.file',
-                     'https://www.googleapis.com/auth/gmail.send']
+DRIVE_SCOPES      = ['https://www.googleapis.com/auth/drive.file']
 DRIVE_FOLDER_NAME = 'Daily Work Updates'
 DB_SYNC_FOLDER    = 'reporting_users'
 
@@ -165,32 +164,18 @@ def is_user_approved(email):
         return True
     return get_user_status(email) == 'approved'
 
-def _send_raw_email(from_user, from_pass, to_email, subject, html_body):
-    brevo_key = os.getenv('BREVO_API_KEY', '')
-    if brevo_key:
-        import urllib.request as _ureq
-        sender_email = from_user or os.getenv('ADMIN_GMAIL_USER', 'noreply@dailyupdate.app')
-        payload = json.dumps({
-            'sender':      {'name': 'Daily Update App', 'email': sender_email},
-            'to':          [{'email': to_email}],
-            'subject':     subject,
-            'htmlContent': html_body
-        }).encode('utf-8')
-        req = _ureq.Request('https://api.brevo.com/v3/smtp/email', data=payload,
-                             headers={'api-key': brevo_key,
-                                      'Content-Type': 'application/json'},
-                             method='POST')
-        _ureq.urlopen(req, timeout=15)
-        return
-    # Fallback: Gmail SMTP (local development only)
+def _send_raw_email(from_user, from_pass, to_email, subject, html_body, cc_emails=None):
     msg = MIMEMultipart('alternative')
     msg['Subject'] = subject
     msg['From']    = from_user
     msg['To']      = to_email
+    if cc_emails:
+        msg['Cc'] = ', '.join(cc_emails)
     msg.attach(MIMEText(html_body, 'html'))
+    all_rcpt = [to_email] + (cc_emails or [])
     with smtplib.SMTP_SSL('smtp.gmail.com', 465) as sv:
         sv.login(from_user, from_pass)
-        sv.sendmail(from_user, [to_email], msg.as_string())
+        sv.sendmail(from_user, all_rcpt, msg.as_string())
 
 def send_approval_request(new_user_email, approval_url):
     s         = get_user_settings(ADMIN_EMAIL)
@@ -352,18 +337,6 @@ def upload_to_drive(service, folder_id, filename, content_bytes, mime_type):
         ).execute()['id']
     return file_id
 
-def send_via_gmail_api(user_email, to_emails, subject, html_body):
-    import base64
-    creds = get_user_drive_service(user_email)._http.credentials
-    service = build('gmail', 'v1', credentials=creds)
-    msg = MIMEMultipart('alternative')
-    msg['Subject'] = subject
-    msg['To']      = to_emails[0] if to_emails else ''
-    if len(to_emails) > 1:
-        msg['Cc'] = ', '.join(to_emails[1:])
-    msg.attach(MIMEText(html_body, 'html'))
-    raw = base64.urlsafe_b64encode(msg.as_bytes()).decode()
-    service.users().messages().send(userId='me', body={'raw': raw}).execute()
 
 def save_to_drive(email, date_key, work_date, form_data, teams_message):
     service    = get_user_drive_service(email)
@@ -896,9 +869,6 @@ def api_validate_gmail():
     gmail_pass = data.get('gmail_app_password', '').strip()
     if not gmail_user or not gmail_pass:
         return jsonify({'valid': False, 'error': 'Email and App Password are required'})
-    # On cloud servers SMTP is blocked — credentials are saved and Brevo handles delivery
-    if os.getenv('BREVO_API_KEY'):
-        return jsonify({'valid': True, 'message': 'Credentials saved! Emails are sent via Brevo (SMTP blocked on cloud).'})
     try:
         with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=10) as server:
             server.login(gmail_user, gmail_pass)
@@ -1069,16 +1039,14 @@ def api_send_email():
         full_html = f"""<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
 <body style="margin:0;padding:20px;font-family:Arial,sans-serif;">{email_html}</body></html>"""
 
-        all_recipients = [to_email] + cc_emails
-        # Use Gmail API — sends from user's real Gmail, appears in Sent folder
-        send_via_gmail_api(email, all_recipients, email_subject, full_html)
-        return jsonify({'success': True, 'message': 'Email sent! Check your Gmail Sent folder.'})
+        _send_raw_email(gmail_user, gmail_pass, to_email,
+                        email_subject, full_html, cc_emails=cc_emails)
+        return jsonify({'success': True, 'message': 'Email sent successfully! Check your Gmail Sent folder.'})
+    except smtplib.SMTPAuthenticationError:
+        return jsonify({'success': False,
+                        'error': 'Gmail authentication failed. Please update your App Password in Settings.'}), 400
     except Exception as e:
-        err = str(e)
-        if 'gmail.send' in err or 'insufficient' in err.lower() or 'scope' in err.lower():
-            return jsonify({'success': False,
-                            'error': 'Please reconnect Google Drive in Setup to enable email sending (new permission needed).'}), 403
-        return jsonify({'success': False, 'error': err}), 500
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/history')
 @login_required_api
